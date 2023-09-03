@@ -10,3 +10,4 @@ steps:
   # Deploy the image to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['run', 'deploy', 'arcs-back-service', '--image', 'gcr.io/$PROJECT_ID/arcs-back', '--region', 'us-central1', '--platform', 'managed', '--allow-unauthenticated']
+logging: CLOUD_LOGGING_ONLY
