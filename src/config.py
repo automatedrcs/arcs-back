@@ -5,5 +5,7 @@ USERNAME = get_secret("arcs-391022", "arcs-db-username")
 PASSWORD = get_secret("arcs-391022", "arcs-db-password")
 HOST = "arcs-391022:us-central1:arcs-sql-instance"
 DBNAME = "arcs_db"
+PORT = 8080
 
-DATABASE_URL = f"postgresql://{USERNAME}:{PASSWORD}@{HOST}/{DBNAME}"
+# Construct the DATABASE_URL
+DATABASE_URL = f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}"
