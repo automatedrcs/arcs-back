@@ -25,6 +25,8 @@ steps:
       # - '--set-env-vars'
       - '--service-account'
       - '994970677374-compute@developer.gserviceaccount.com'
+      - '--vpc-connector'
+      - 'vpc-connector' 
 
 images:
   - 'gcr.io/$PROJECT_ID/arcs-back'
