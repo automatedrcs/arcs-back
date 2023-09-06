@@ -16,4 +16,4 @@ COPY ./src /app/src
 
 # Explicitly set the entrypoint and command
 ENTRYPOINT ["uvicorn"]
-CMD ["src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["src.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
