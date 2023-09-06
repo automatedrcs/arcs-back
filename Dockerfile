@@ -14,5 +14,5 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # Copy the entire src directory
 COPY ./src /app/src
 
-# Use CMD to run the uvicorn command with the dynamic port
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8080}"]
+# Use a shell to substitute the value of PORT and run the uvicorn command
+CMD sh -c "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080}"
