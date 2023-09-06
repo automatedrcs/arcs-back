@@ -2,9 +2,6 @@ FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
 
 WORKDIR /app
 
-# Environment variables
-ENV DATABASE_URL=your_database_url_here
-
 # Copy the requirements and install
 COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip
