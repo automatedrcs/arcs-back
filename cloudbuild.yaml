@@ -7,9 +7,25 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/arcs-back']
 
-  # Deploy the image to Cloud Run
+  # Deploy the image to Cloud Run with the sidecar
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['run', 'deploy', 'arcs-back-service', '--image', 'gcr.io/$PROJECT_ID/arcs-back', '--region', 'us-central1', '--platform', 'managed', '--allow-unauthenticated']
+    args:
+      - 'run'
+      - 'deploy'
+      - 'arcs-back-service'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/arcs-back'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--add-cloudsql-instances'
+      - 'arcs-391022:us-central1:arcs-sql-instance'
+      - '--set-env-vars'
+      - 'DATABASE_URL=postgresql://$(gcloud secrets versions access latest --secret=arcs-db-username):$(gcloud secrets versions access latest --secret=arcs-db-password)@arcs-391022:us-central1:arcs-sql-instance/arcs_db'
+      - '--service-account'
+      - 'arcs-service-account@arcs-391022.iam.gserviceaccount.com'
 
 images:
   - 'gcr.io/$PROJECT_ID/arcs-back'
