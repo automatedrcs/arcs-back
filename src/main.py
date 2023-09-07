@@ -35,3 +35,9 @@ async def shutdown():
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
+
+@app.get("/api/data")
+def get_sample_data():
+    sample_data = {"message": "This is a sample data response."}
+    return sample_data
