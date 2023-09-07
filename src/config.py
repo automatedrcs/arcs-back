@@ -3,7 +3,7 @@ from .utils import get_secret
 
 USERNAME = get_secret("arcs-391022", "arcs-db-username")
 PASSWORD = get_secret("arcs-391022", "arcs-db-password")
-HOST = "arcs-391022:us-central1:arcs-sql-instance"
+HOST = "10.223.0.8"
 DBNAME = "arcs-db"
 PORT = 5432
 
