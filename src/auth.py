@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from authlib.integrations.starlette_client import OAuth
 from starlette.responses import RedirectResponse
-from utils import get_secret
+from .utils import get_secret
 
 # Initialize the router
 auth_router = APIRouter()
