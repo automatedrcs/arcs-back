@@ -13,3 +13,6 @@ asyncpg
 httpx
 pydantic
 authlib
+pyjwt
+datetime
+bcrypt

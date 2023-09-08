@@ -3,8 +3,9 @@ from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import secretmanager
 from .config import DATABASE_URL
-from .auth import auth_router
-
+from routers.auth import auth_router
+from routers.user import user_router
+from .db import get_db
 
 database = Database(DATABASE_URL)
 
@@ -36,10 +37,10 @@ async def shutdown():
 def read_root():
     return {"Hello": "World"}
 
-
 @app.get("/api/data")
 def get_sample_data():
     sample_data = {"message": "This is a sample data response."}
     return sample_data
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(user_router, prefix="/user", tags=["User"])
