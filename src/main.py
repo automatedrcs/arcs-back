@@ -1,12 +1,10 @@
 from fastapi import FastAPI
 from databases import Database
-from sqlalchemy import create_engine, MetaData
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import secretmanager
 from .config import DATABASE_URL
 
 database = Database(DATABASE_URL)
-metadata = MetaData()
 
 app = FastAPI()
 
@@ -41,3 +39,5 @@ def read_root():
 def get_sample_data():
     sample_data = {"message": "This is a sample data response."}
     return sample_data
+
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
