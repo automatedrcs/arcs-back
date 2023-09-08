@@ -3,6 +3,8 @@ from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import secretmanager
 from .config import DATABASE_URL
+from .auth import auth_router
+
 
 database = Database(DATABASE_URL)
 

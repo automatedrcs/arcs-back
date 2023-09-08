@@ -2,17 +2,19 @@ from fastapi_oauth2 import GoogleOAuth2
 from utils import get_secret
 from databases import Database
 
+auth_router = APIRouter()
+
 google_oauth2 = GoogleOAuth2(
     client_id=get_secret("CLIENT_ID"), 
     client_secret=get_secret("CLIENT_SECRET"),
     redirect_uri=get_secret("REDIRECT_URL")
 )
 
-@app.get("/login")
+@auth_router.get("/login")
 async def login(request: Request):
     return google_oauth2.redirect(request)
 
-@app.get("/callback")
+@auth_router.get("/callback")
 async def callback(code: str, request: Request):
     token = await google_oauth2.get_access_token(code, request)
     
