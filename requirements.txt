@@ -6,6 +6,7 @@ google-auth
 google-auth-oauthlib
 google-api-python-client
 google-cloud-secret-manager
+fastapi_oauth2
 sqlalchemy
 databases[postgresql]
 cryptography
