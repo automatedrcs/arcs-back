@@ -27,5 +27,3 @@ async def callback(code: str, request: Request):
     
     # Redirect user or send a response
     return {"token": token['access_token']}  # Just an example
-
-export auth_router
