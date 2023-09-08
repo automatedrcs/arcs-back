@@ -11,3 +11,4 @@ databases[postgresql]
 asyncpg
 httpx
 pydantic
+cryptography
