@@ -1,11 +1,11 @@
-
 from fastapi_oauth2 import GoogleOAuth2
+from utils import get_secret
 from databases import Database
 
 google_oauth2 = GoogleOAuth2(
-    client_id="YOUR_GOOGLE_CLIENT_ID", 
-    client_secret="YOUR_GOOGLE_CLIENT_SECRET",
-    redirect_uri="YOUR_CALLBACK_URL"
+    client_id=get_secret("CLIENT_ID"), 
+    client_secret=get_secret("CLIENT_SECRET"),
+    redirect_uri=get_secret("REDIRECT_URL")
 )
 
 @app.get("/login")

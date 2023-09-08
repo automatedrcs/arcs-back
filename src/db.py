@@ -2,8 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import create_engine, Column, Integer, String, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
-DATABASE_URL = "postgresql://user:password@localhost:5432/mydatabase"
+from .config import DATABASE_URL
 
 Base = declarative_base()
 engine = create_engine(DATABASE_URL)
@@ -15,3 +14,10 @@ class Person(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     data = Column(JSON)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
