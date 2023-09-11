@@ -3,8 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
 import jwt
 import bcrypt
-from .auth import oauth2_scheme, credentials_exception
-from ..utils import get_secret, encrypt, decrypt
+from routers.auth import oauth2_scheme, credentials_exception
+from utils import get_secret, encrypt, decrypt
 
 SECRET_KEY = get_secret("SESSION_SECRET")
 ALGORITHM = "HS256"

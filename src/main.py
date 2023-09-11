@@ -2,10 +2,10 @@ from fastapi import FastAPI
 from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import secretmanager
-from .config import DATABASE_URL
+from config import DATABASE_URL
 from routers.auth import auth_router
 from routers.user import user_router
-from .db import get_db
+from db import get_db
 
 database = Database(DATABASE_URL)
 
