@@ -1,5 +1,5 @@
 # This will hold the configurations for your application
-from .utils import get_secret
+from utils import get_secret
 
 USERNAME = get_secret("DB_USERNAME")
 PASSWORD = get_secret("DB_PASSWORD")
