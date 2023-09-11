@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
+from datetime import timedelta, datetime
+import jwt
+import bcrypt
 from .auth import oauth2_scheme, credentials_exception
 from .utils import get_secret, encrypt, decrypt
-import jwt
-from datetime import timedelta
 
 SECRET_KEY = get_secret("SESSION_SECRET")
 ALGORITHM = "HS256"
@@ -43,16 +44,6 @@ async def signup(username: str, password: str):
     # Store username and hashed_password in the database.
     # await database.store_user(username, hashed_password)
     return {"message": "User created successfully"}
-
-@user_router.post("/token/")
-def login_for_access_token(username: str, password: str):
-    if username != "test" or password != "password":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-
-    access_token = create_access_token(data={"sub": username})
-    refresh_token = create_refresh_token(data={"sub": username})
-
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
 @user_router.post("/login/")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
