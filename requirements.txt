@@ -16,3 +16,4 @@ authlib
 pyjwt
 datetime
 bcrypt
+psycopg2
