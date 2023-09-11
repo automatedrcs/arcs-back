@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
 from starlette.responses import RedirectResponse
-from .utils import get_secret, encrypt
+from ..utils import get_secret, encrypt
 from fastapi import FastAPI
 from datetime import datetime, timedelta
 
