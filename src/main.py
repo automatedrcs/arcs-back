@@ -1,13 +1,13 @@
 from fastapi import FastAPI
-from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
-from google.cloud import secretmanager
 from config import DATABASE_URL
 from routers.auth import auth_router
 from routers.user import user_router
-from database.config import get_db
+from database.database import get_db, SessionLocal, engine
+import database.models
 
-database = Database(DATABASE_URL)
+# Create tables if they don't exist
+database.models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -24,15 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup():
-    print("connecting to database")
-    await database.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -44,3 +35,4 @@ def get_sample_data():
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(user_router, prefix="/user", tags=["User"])
+app.include_router(user_router, prefix="/organization", tags=["Organization"])

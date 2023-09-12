@@ -3,11 +3,17 @@ from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
 from starlette.responses import RedirectResponse
 from utils import get_secret, encrypt
-from fastapi import FastAPI
-from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from database.database import get_db
+from database.crud import update_person_data_by_email
 
 # Initialize the router
 auth_router = APIRouter()
+
+# Constants for JWT
+SECRET_KEY = get_secret("SESSION_SECRET")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 # Setting up OAuth2.0
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -28,22 +34,18 @@ oauth.register(
     client_kwargs={'scope': 'openid profile email'},
 )
 
-
 @auth_router.get('/google/login')
 async def login(request: Request):
     redirect_uri = url_for('auth')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @auth_router.get('/google/callback')
-async def auth(request: Request):
+async def auth(request: Request, db: Session = Depends(get_db)):
     token = await oauth.google.authorize_access_token(request)
     user = await oauth.google.parse_id_token(request, token)
     
-    # Now, save the refresh token into the "person" table
+    # Save the refresh token into the "person" table
     encrypted_refresh_token = encrypt(token['refresh_token'])
-    query = "INSERT INTO person (data) VALUES (:data)"
-    values = {"data": {"refresh_token": encrypted_refresh_token}}
-    
-    # await database.execute(query=query, values=values)  # Uncomment when ready to save to DB
+    update_person_data_by_email(db, user["email"], {"refresh_token": encrypted_refresh_token})
     
     return {"token": token['access_token'], "user": user}
