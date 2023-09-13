@@ -1,3 +1,4 @@
+# User router
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from routers.auth import oauth2_scheme, credentials_exception, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -17,13 +18,13 @@ def verify_password(plain_password: str, hashed_password: str):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 @user_router.post("/signup/")
-async def signup(username: str, password: str, db: Session = Depends(get_db)):
+def signup(username: str, password: str, db: Session = Depends(get_db)):
     hashed_password = hash_password(password)
     create_user(db, username, hashed_password)  # You might need to add other fields based on the user model
     return {"message": "User created successfully"}
 
 @user_router.post("/login/")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     stored_user = get_user_by_username(db, form_data.username)
 
     if not stored_user or not verify_password(form_data.password, stored_user.password):
@@ -51,3 +52,6 @@ def create_access_token(data: dict):
 
 def create_refresh_token(data: dict):
     return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_token(token: str):
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

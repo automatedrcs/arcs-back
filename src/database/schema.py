@@ -1,3 +1,4 @@
+# Desc: Pydantic schemas for database models
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime

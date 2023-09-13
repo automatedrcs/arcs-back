@@ -1,3 +1,4 @@
+# Auth router
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
@@ -40,9 +41,9 @@ async def login(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @auth_router.get('/google/callback')
-async def auth(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.google.authorize_access_token(request)
-    user = await oauth.google.parse_id_token(request, token)
+def auth(request: Request, db: Session = Depends(get_db)):
+    token = oauth.google.authorize_access_token(request)
+    user = oauth.google.parse_id_token(request, token)
     
     # Save the refresh token into the "person" table
     encrypted_refresh_token = encrypt(token['refresh_token'])

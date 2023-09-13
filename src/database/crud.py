@@ -82,7 +82,7 @@ def create_person(db: Session, person: schema.PersonCreate):
 def get_person(db: Session, person_id: UUID):
     return db.query(models.Person).filter(models.Person.id == person_id).first()
 
-def get_persons_by_user_id(db: Session, user_id: UUID, skip: int = 0, limit: int = 100):
+def get_people_by_user_id(db: Session, user_id: UUID, skip: int = 0, limit: int = 100):
     return db.query(models.Person).filter(models.Person.user_id == user_id).offset(skip).limit(limit).all()
 
 def update_person(db: Session, person_id: UUID, person: schema.PersonUpdate):
