@@ -1,6 +1,42 @@
 from sqlalchemy.orm import Session
 from database import models
 from database import schema
+from typing import Optional, Union, Optional
+
+# Organization CRUD operations
+
+def get_orgs(
+        db: Session,
+        org_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 10
+) -> Union[Organization, List[Organization]]:
+    if org_id:
+        return db.query(Organization).filter(Organization.id == org_id).first()
+    return db.query(Organization).offset(skip).limit(limit).all()
+
+def create_org(db: Session, org: OrganizationCreate) -> Organization:
+    db_org = Organization(**org.dict())
+    db.add(db_org)
+    db.commit()
+    db.refresh(db_org)
+    return db_org
+
+def update_org(db: Session, org_id: int, org: OrganizationCreate) -> Organization:
+    db_org = db.query(Organization).filter(Organization.id == org_id).first()
+    if db_org:
+        for key, value in org.dict().items():
+            setattr(db_org, key, value)
+        db.commit()
+        db.refresh(db_org)
+    return db_org
+
+def delete_org(db: Session, org_id: int) -> Organization:
+    db_org = db.query(Organization).filter(Organization.id == org_id).first()
+    if db_org:
+        db.delete(db_org)
+        db.commit()
+    return db_org
 
 # User CRUD operations
 def create_user(db: Session, user: schema.UserCreate):
@@ -16,7 +52,7 @@ def get_user(db: Session, user_id: uuid.UUID):
 def get_user_by_username(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
 
-def get_users(db: Session, skip: int = 0, limit: int = 100):
+def get_users_by_organization_id(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 def update_user(db: Session, user_id: uuid.UUID, user: schema.UserUpdate):
@@ -37,38 +73,6 @@ def delete_user(db: Session, user_id: uuid.UUID):
         return db_user
     return None
 
-# Organization CRUD operations
-
-def create_organization(db: Session, organization: schema.OrganizationCreate):
-    db_organization = models.Organization(**organization.dict())
-    db.add(db_organization)
-    db.commit()
-    db.refresh(db_organization)
-    return db_organization
-
-def get_organization(db: Session, organization_id: int):
-    return db.query(models.Organization).filter(models.Organization.id == organization_id).first()
-
-def get_organizations(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Organization).offset(skip).limit(limit).all()
-
-def update_organization(db: Session, organization_id: int, organization: schema.OrganizationUpdate):
-    db_organization = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
-    if db_organization:
-        for key, value in organization.dict().items():
-            setattr(db_organization, key, value)
-        db.commit()
-        db.refresh(db_organization)
-        return db_organization
-    return None
-
-def delete_organization(db: Session, organization_id: int):
-    db_organization = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
-    if db_organization:
-        db.delete(db_organization)
-        db.commit()
-        return db_organization
-    return None
 
 # Person CRUD operations
 
@@ -79,11 +83,32 @@ def create_person(db: Session, person: schema.PersonCreate):
     db.refresh(db_person)
     return db_person
 
-def get_person(db: Session, person_id: UUID):
-    return db.query(models.Person).filter(models.Person.id == person_id).first()
 
-def get_people_by_user_id(db: Session, user_id: UUID, skip: int = 0, limit: int = 100):
-    return db.query(models.Person).filter(models.Person.user_id == user_id).offset(skip).limit(limit).all()
+def get_people(
+        db: Session,
+        person_id: Optional[UUID] = None,
+        org_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
+        role: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100
+) -> Union[models.Person, List[models.Person]]:
+    query = db.query(models.Person)
+
+    # Apply filters based on provided parameters
+    if person_id:
+        return query.filter(models.Person.id == person_id).first()
+
+    if org_id:
+        query = query.filter(models.Person.organization_id == org_id)
+        
+    if user_id:
+        query = query.filter(models.Person.user_id == user_id)
+
+    if role:
+        query = query.filter(models.Person.role == role)
+
+    return query.offset(skip).limit(limit).all()
 
 def update_person(db: Session, person_id: UUID, person: schema.PersonUpdate):
     db_person = db.query(models.Person).filter(models.Person.id == person_id).first()
