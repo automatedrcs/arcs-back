@@ -39,31 +39,32 @@ def delete_org(db: Session, org_id: int) -> Organization:
     return db_org
 
 # User CRUD operations
-def create_user(db: Session, user: schema.UserCreate):
-    db_user = models.User(**user.dict())
+
+def get_user(
+        db: Session,
+        username: Optional[str] = None,
+        user_id: Optional[int] = None
+) -> User:
+    if username:
+        return db.query(User).filter(User.username == username).first()
+    if user_id:
+        return db.query(User).filter(User.id == user_id).first()
+
+def create_user(db: Session, user: UserCreate) -> User:
+    db_user = User(**user.dict())
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-def get_user(db: Session, user_id: uuid.UUID):
-    return db.query(models.User).filter(models.User.id == user_id).first()
-
-def get_user_by_username(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
-
-def get_users_by_organization_id(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).offset(skip).limit(limit).all()
-
-def update_user(db: Session, user_id: uuid.UUID, user: schema.UserUpdate):
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> User:
+    db_user = db.query(User).filter(User.username == username).first()
     if db_user:
-        for key, value in user.dict().items():
-            setattr(db_user, key, value)
+        db_user.access_token = access_token
+        db_user.refresh_token = refresh_token
         db.commit()
         db.refresh(db_user)
-        return db_user
-    return None
+    return db_user
 
 def delete_user(db: Session, user_id: uuid.UUID):
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -73,7 +74,6 @@ def delete_user(db: Session, user_id: uuid.UUID):
         return db_user
     return None
 
-
 # Person CRUD operations
 
 def create_person(db: Session, person: schema.PersonCreate):
@@ -82,7 +82,6 @@ def create_person(db: Session, person: schema.PersonCreate):
     db.commit()
     db.refresh(db_person)
     return db_person
-
 
 def get_people(
         db: Session,
@@ -130,18 +129,35 @@ def delete_person(db: Session, person_id: UUID):
 
 # Availability CRUD operations
 
+def get_availabilities(
+    db: Session,
+    organization_id: int,
+    availability_id: Optional[UUID] = None,
+    person_id: Optional[UUID] = None,
+    skip: int = 0,
+    limit: int = 100
+) -> Union[models.Availability, List[models.Availability]]:
+    query = db.query(models.Availability)
+
+    # Always filter by organization
+    query = query.filter(models.Availability.organization_id == organization_id)
+
+    # Apply filters based on provided parameters
+    if availability_id:
+        return query.filter(models.Availability.id == availability_id).first()
+
+    if person_id:
+        query = query.filter(models.Availability.person_id == person_id)
+
+    return query.offset(skip).limit(limit).all()
+
+
 def create_availability(db: Session, availability: schema.AvailabilityCreate):
     db_availability = models.Availability(**availability.dict())
     db.add(db_availability)
     db.commit()
     db.refresh(db_availability)
     return db_availability
-
-def get_availability(db: Session, availability_id: UUID):
-    return db.query(models.Availability).filter(models.Availability.id == availability_id).first()
-
-def get_availabilities_by_person_id(db: Session, person_id: UUID, skip: int = 0, limit: int = 100):
-    return db.query(models.Availability).filter(models.Availability.person_id == person_id).offset(skip).limit(limit).all()
 
 def update_availability(db: Session, availability_id: UUID, availability: schema.AvailabilityUpdate):
     db_availability = db.query(models.Availability).filter(models.Availability.id == availability_id).first()
@@ -170,11 +186,13 @@ def create_job(db: Session, job: schema.JobCreate):
     db.refresh(db_job)
     return db_job
 
-def get_job(db: Session, job_id: UUID):
-    return db.query(models.Job).filter(models.Job.id == job_id).first()
-
-def get_jobs_by_organization_id(db: Session, organization_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Job).filter(models.Job.organization_id == organization_id).offset(skip).limit(limit).all()
+def get_jobs(db: Session, organization_id: Optional[int] = None, skip: int = 0, limit: int = 100):
+    query = db.query(models.Job)
+    
+    if organization_id:
+        query = query.filter(models.Job.organization_id == organization_id)
+    
+    return query.offset(skip).limit(limit).all()
 
 def update_job(db: Session, job_id: UUID, job: schema.JobUpdate):
     db_job = db.query(models.Job).filter(models.Job.id == job_id).first()

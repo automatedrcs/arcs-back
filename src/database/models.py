@@ -1,8 +1,11 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, func, 
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
 from database.database import Base
+from cryptography.fernet import Fernet
+from sqlalchemy.ext.hybrid import hybrid_property
+from config import SECRET_KEY
 
 class Organization(Base):
     __tablename__ = "organization"
@@ -28,14 +31,30 @@ class User(Base):
     password = Column(String)
     name = Column(String, nullable=True)
     permission = Column(String, default="user")
-    access_token = Column(String, nullable=True)
-    refresh_token = Column(String, nullable=True)
+    _access_token = Column("access_token", String, nullable=True)  # Raw encrypted token
+    _refresh_token = Column("refresh_token", String, nullable=True)  # Raw encrypted token
     last_login = Column(DateTime(timezone=True), server_default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     people = relationship("Person", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
+
+    @hybrid_property
+    def access_token(self):
+        return cipher_suite.decrypt(self._access_token.encode()).decode() if self._access_token else None
+
+    @access_token.setter
+    def access_token(self, value):
+        self._access_token = cipher_suite.encrypt(value.encode()).decode()
+
+    @hybrid_property
+    def refresh_token(self):
+        return cipher_suite.decrypt(self._refresh_token.encode()).decode() if self._refresh_token else None
+
+    @refresh_token.setter
+    def refresh_token(self, value):
+        self._refresh_token = cipher_suite.encrypt(value.encode()).decode()
 
 
 class Notification(Base):

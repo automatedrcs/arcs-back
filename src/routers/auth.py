@@ -11,11 +11,6 @@ from database.crud import update_person_data_by_email
 # Initialize the router
 auth_router = APIRouter()
 
-# Constants for JWT
-SECRET_KEY = get_secret("SESSION_SECRET")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440
-
 # Setting up OAuth2.0
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 credentials_exception = HTTPException(

@@ -1,9 +1,8 @@
-# Organization router
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.schema import OrganizationCreate, Organization
-from database.crud import get_orgs, create_org, get_org_by_id, update_org, delete_org
+from database.crud import get_orgs, create_org, update_org, delete_org
 
 org_router = APIRouter()
 
@@ -20,7 +19,7 @@ def read_orgs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
 @org_router.get("/{org_id}", response_model=Organization)
 def read_org(org_id: int, db: Session = Depends(get_db)):
     """Get a specific org by its ID."""
-    db_org = get_org_by_id(db, org_id)
+    db_org = get_orgs(db, org_id=org_id)
     if db_org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
     return db_org

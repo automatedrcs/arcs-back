@@ -12,19 +12,11 @@ job_router = APIRouter()
 def create_new_job(job: JobCreate, db: Session = Depends(get_db)):
     return create_job(db, job)
 
-@job_router.get("/", response_model=list[Job])
-def read_jobs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    """Get a list of jobs. Can be paginated with skip and limit."""
-    jobs = get_jobs(db, skip=skip, limit=limit)
+@job_router.get("/", response_model=List[Job])
+def read_jobs(skip: int = 0, limit: int = 10, organization_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Get a list of jobs. Can be paginated with skip and limit or filtered by organization_id."""
+    jobs = get_jobs(db, skip=skip, limit=limit, organization_id=organization_id)
     return jobs
-
-@job_router.get("/{job_id}", response_model=Job)
-def read_job(job_id: int, db: Session = Depends(get_db)):
-    """Get a specific job by its ID."""
-    db_job = get_job_by_id(db, job_id)
-    if db_job is None:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return db_job
 
 @job_router.put("/{job_id}", response_model=Job)
 def update_existing_job(job_id: int, job: JobCreate, db: Session = Depends(get_db)):

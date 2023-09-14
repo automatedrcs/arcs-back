@@ -1,11 +1,11 @@
-# User router
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from routers.auth import oauth2_scheme, credentials_exception, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from utils import get_secret, encrypt, decrypt
-from database.crud import get_user_by_username, create_user, update_user_tokens_by_username
+from routers.auth import oauth2_scheme, credentials_exception, 
+from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from database.crud import get_user, create_user
 from database.database import get_db
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta 
 import jwt
 import bcrypt
 
@@ -20,12 +20,12 @@ def verify_password(plain_password: str, hashed_password: str):
 @user_router.post("/signup/")
 def signup(username: str, password: str, db: Session = Depends(get_db)):
     hashed_password = hash_password(password)
-    create_user(db, username, hashed_password)  # You might need to add other fields based on the user model
+    create_user(db, username=username, password=hashed_password)
     return {"message": "User created successfully"}
 
 @user_router.post("/login/")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    stored_user = get_user_by_username(db, form_data.username)
+    stored_user = get_user(db, username=form_data.username)
 
     if not stored_user or not verify_password(form_data.password, stored_user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
@@ -33,13 +33,15 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     access_token = create_access_token(data={"sub": form_data.username})
     refresh_token = create_refresh_token(data={"sub": form_data.username})
     
-    update_user_tokens_by_username(db, form_data.username, access_token, refresh_token)  # Save the tokens in the user table
+    stored_user.access_token = access_token
+    stored_user.refresh_token = refresh_token
+    db.commit()  # Save the tokens in the user table
     
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
 @user_router.post("/token/refresh/")
-def refresh_token(refresh_token: str):
-    new_access_token = create_access_token(data={"sub": "test"})  # Replace 'test' with logic to get the user from the refresh token
+def refresh_token_endpoint(refresh_token: str):  # changed the function name to avoid conflict with variable
+    new_access_token = create_access_token(data={"sub": "test"})  # Placeholder logic
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 # Helper functions for token creation, moved from auth.py

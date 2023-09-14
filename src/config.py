@@ -14,3 +14,8 @@ DATABASE_URL = f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}"
 ORIGINS = [
     "https://arcs-front-service-ctl3t7ldeq-uc.a.run.app",
 ]
+
+# Constants for JWT
+SECRET_KEY = get_secret("SESSION_SECRET")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
