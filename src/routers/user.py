@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from routers.auth import oauth2_scheme, credentials_exception, 
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from database.crud import get_user, create_user
 from database.database import get_db
+from database.schema import User, UserCreate
+from typing import Optional
+from uuid import UUID
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta 
 import jwt
@@ -11,40 +12,13 @@ import bcrypt
 
 user_router = APIRouter()
 
+# Helper Functions
 def hash_password(password: str):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
 def verify_password(plain_password: str, hashed_password: str):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-@user_router.post("/signup/")
-def signup(username: str, password: str, db: Session = Depends(get_db)):
-    hashed_password = hash_password(password)
-    create_user(db, username=username, password=hashed_password)
-    return {"message": "User created successfully"}
-
-@user_router.post("/login/")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    stored_user = get_user(db, username=form_data.username)
-
-    if not stored_user or not verify_password(form_data.password, stored_user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-
-    access_token = create_access_token(data={"sub": form_data.username})
-    refresh_token = create_refresh_token(data={"sub": form_data.username})
-    
-    stored_user.access_token = access_token
-    stored_user.refresh_token = refresh_token
-    db.commit()  # Save the tokens in the user table
-    
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
-
-@user_router.post("/token/refresh/")
-def refresh_token_endpoint(refresh_token: str):  # changed the function name to avoid conflict with variable
-    new_access_token = create_access_token(data={"sub": "test"})  # Placeholder logic
-    return {"access_token": new_access_token, "token_type": "bearer"}
-
-# Helper functions for token creation, moved from auth.py
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -57,3 +31,80 @@ def create_refresh_token(data: dict):
 
 def decode_token(token: str):
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+# CRUD Operations
+def get_user(db: Session, organization_id: Optional[int] = None, username: Optional[str] = None, user_id: Optional[UUID] = None):
+    query = db.query(User)
+    
+    if organization_id:
+        query = query.filter(User.organization_id == organization_id)
+    
+    if username:
+        return query.filter(User.username == username).first()
+    
+    if user_id:
+        return query.filter(User.id == user_id).first()
+
+def create_user(db: Session, user: UserCreate, organization_id: int):
+    db_user = User(organization_id=organization_id, **user.dict())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str):
+    db_user = db.query(User).filter(User.username == username).first()
+    if db_user:
+        db_user.access_token = access_token
+        db_user.refresh_token = refresh_token
+        db.commit()
+        db.refresh(db_user)
+    return db_user
+
+def delete_user(db: Session, user_id: UUID):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user:
+        db.delete(db_user)
+        db.commit()
+        return db_user
+    return None
+
+# Router Endpoints
+@user_router.post("/signup/")
+def signup(username: str, password: str, email: str, organization_id: int, db: Session = Depends(get_db)):
+    if get_user(db, organization_id, username=username):
+        raise HTTPException(status_code=400, detail="Username already registered")
+    hashed_password = hash_password(password)
+    create_user(db, UserCreate(username=username, password=hashed_password, email=email), organization_id)
+    return {"message": "User created successfully"}
+
+@user_router.post("/login/")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = get_user(db, username=form_data.username)
+    if not user or not verify_password(form_data.password, user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+    access_token = create_access_token(data={"sub": form_data.username})
+    refresh_token = create_refresh_token(data={"sub": form_data.username})
+    update_user_tokens(db, form_data.username, access_token, refresh_token)
+    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
+
+@user_router.post("/token/refresh/")
+def refresh_token_endpoint(refresh_token: str, db: Session = Depends(get_db)):
+    try:
+        payload = decode_token(refresh_token)
+        username = payload.get("sub")
+        if not username:
+            raise credentials_exception
+        user = get_user(db, username=username)
+        if not user or user.refresh_token != refresh_token:
+            raise credentials_exception
+        new_access_token = create_access_token(data={"sub": username})
+        return {"access_token": new_access_token, "token_type": "bearer"}
+    except jwt.JWTError:
+        raise credentials_exception
+
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)

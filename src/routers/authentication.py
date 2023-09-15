@@ -1,4 +1,3 @@
-# Auth router
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
@@ -9,7 +8,7 @@ from database.database import get_db
 from database.crud import update_person_data_by_email
 
 # Initialize the router
-auth_router = APIRouter()
+authentication_router = APIRouter()
 
 # Setting up OAuth2.0
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -30,12 +29,12 @@ oauth.register(
     client_kwargs={'scope': 'openid profile email'},
 )
 
-@auth_router.get('/google/login')
+@authentication_router.get('/google/login')
 async def login(request: Request):
     redirect_uri = url_for('auth')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@auth_router.get('/google/callback')
+@authentication_router.get('/google/callback')
 def auth(request: Request, db: Session = Depends(get_db)):
     token = oauth.google.authorize_access_token(request)
     user = oauth.google.parse_id_token(request, token)
