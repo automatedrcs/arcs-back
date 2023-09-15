@@ -17,7 +17,7 @@ def create_person(db: Session, person: PersonCreate) -> PersonModel:
 
 def get_people(
         db: Session,
-        organization_id: Optional[int] = None,
+        organization_id: int,
         person_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
         role: Optional[str] = None,
@@ -64,37 +64,36 @@ person_router = APIRouter()
 def create_new_person(person: PersonCreate, db: Session = Depends(get_db)) -> PersonModel:
     return create_person(db, person)
 
-@person_router.get("/{person_id}", response_model=Person)
-def read_person(person_id: UUID, db: Session = Depends(get_db)) -> Person:
-    db_person = get_people(db, person_id=person_id)
+@person_router.get("/organization/{organization_id}/person/{person_id}", response_model=Person)
+def read_person_by_id(organization_id: int, person_id: UUID, db: Session = Depends(get_db)) -> Person:
+    db_person = get_people(db, organization_id, person_id)
     if db_person is None:
         raise HTTPException(status_code=404, detail="Person not found")
     return db_person
 
-@person_router.get("/{organization_id}", response_model=list[Person])
+@person_router.get("/organization/{organization_id}/people", response_model=List[Person])
 def read_people(
         organization_id: int,
-        person_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
         role: Optional[str] = None,
         skip: int = 0,
         limit: int = 100,
         db: Session = Depends(get_db)
 ) -> List[Person]:
-    """Get a list of people. Can be paginated with skip and limit."""
-    people = get_people(db, organization_id, person_id, user_id, role, skip, limit)
+    people = get_people(db, organization_id, None, user_id, role, skip, limit)
     return people
 
 @person_router.put("/{person_id}", response_model=Person)
 def update_existing_person(person_id: UUID, person: PersonUpdate, db: Session = Depends(get_db)):
-    updated_person = update_person(db, person_id, person)
-    if updated_person is None:
+    db_person = db.query(PersonModel).filter(PersonModel.id == person_id).first()
+    if not db_person:
         raise HTTPException(status_code=404, detail="Person not found")
-    return updated_person
+    return update_person(db, person_id, person)
 
-@person_router.delete("/{person_id}", response_model=Person)
+@person_router.delete("/{person_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_a_person(person_id: UUID, db: Session = Depends(get_db)):
-    db_person = delete_person(db, person_id)
-    if db_person is None:
+    db_person = db.query(PersonModel).filter(PersonModel.id == person_id).first()
+    if not db_person:
         raise HTTPException(status_code=404, detail="Person not found")
-    return db_person
+    delete_person(db, person_id)
+    return

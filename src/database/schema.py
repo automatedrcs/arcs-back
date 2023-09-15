@@ -1,16 +1,35 @@
-# Desc: Pydantic schemas for database models
+# Pydantic Schemas
+
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
+class OrganizationBase(BaseModel):
+    name: str
+
+class OrganizationCreate(OrganizationBase):
+    pass
+
+class OrganizationUpdate(OrganizationBase):
+    pass
+
+class Organization(OrganizationBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
 class UserBase(BaseModel):
     username: str
-    name: Optional[str]
     email: str
+    name: Optional[str]
 
 class UserCreate(UserBase):
     password: str
+
+class UserUpdate(UserBase):
+    password: Optional[str]
 
 class User(UserBase):
     id: UUID
@@ -21,14 +40,19 @@ class User(UserBase):
     class Config:
         orm_mode = True
 
-class OrganizationBase(BaseModel):
-    name: str
+class NotificationBase(BaseModel):
+    organization_id: int
+    user_id: UUID
+    type: str
+    data: dict
 
-class OrganizationCreate(OrganizationBase):
+class NotificationCreate(NotificationBase):
     pass
 
-class Organization(OrganizationBase):
-    id: int
+class Notification(NotificationBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
@@ -36,13 +60,14 @@ class Organization(OrganizationBase):
 class PersonBase(BaseModel):
     email: str
     name: str
+    role: str
+    data: dict
 
 class PersonCreate(PersonBase):
     pass
 
 class PersonUpdate(PersonBase):
-    email: Optional[str]
-    name: Optional[str]
+    pass
 
 class Person(PersonBase):
     id: UUID
@@ -59,6 +84,9 @@ class AvailabilityBase(BaseModel):
 class AvailabilityCreate(AvailabilityBase):
     pass
 
+class AvailabilityUpdate(AvailabilityBase):
+    pass
+
 class Availability(AvailabilityBase):
     id: UUID
 
@@ -67,21 +95,15 @@ class Availability(AvailabilityBase):
 
 class JobBase(BaseModel):
     organization_id: int
+    data: dict
 
-class Job(JobBase):
-    id: UUID
-
-    class Config:
-        orm_mode = True
-
-class EventBase(BaseModel):
-    organization_id: int
-    template_id: UUID
-
-class EventCreate(EventBase):
+class JobCreate(JobBase):
     pass
 
-class Event(EventBase):
+class JobUpdate(JobBase):
+    pass
+
+class Job(JobBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
@@ -92,8 +114,12 @@ class Event(EventBase):
 class TemplateBase(BaseModel):
     organization_id: int
     template_name: str
+    data: dict
 
 class TemplateCreate(TemplateBase):
+    pass
+
+class TemplateUpdate(TemplateBase):
     pass
 
 class Template(TemplateBase):
@@ -104,14 +130,19 @@ class Template(TemplateBase):
     class Config:
         orm_mode = True
 
-class NotificationBase(BaseModel):
+class EventBase(BaseModel):
     organization_id: int
-    user_id: UUID
+    template_id: UUID
+    completed: bool
+    data: dict
 
-class NotificationCreate(NotificationBase):
+class EventCreate(EventBase):
     pass
 
-class Notification(NotificationBase):
+class EventUpdate(EventBase):
+    pass
+
+class Event(EventBase):
     id: UUID
     created_at: datetime
     updated_at: datetime

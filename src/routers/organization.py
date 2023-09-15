@@ -1,16 +1,10 @@
+from typing import List, Union, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
-from database.schema import OrganizationCreate, Organization
-
-organization_router = APIRouter()
+from database.schema import OrganizationCreate, Organization, OrganizationUpdate
 
 # CRUD Functions
-def get_organization_by_id(db: Session, organization_id: int) -> Organization:
-    return db.query(Organization).filter(Organization.id == organization_id).first()
-
-def get_organizations(db: Session, skip: int = 0, limit: int = 10) -> list[Organization]:
-    return db.query(Organization).offset(skip).limit(limit).all()
 
 def create_organization(db: Session, org: OrganizationCreate) -> Organization:
     db_org = Organization(**org.dict())
@@ -18,6 +12,19 @@ def create_organization(db: Session, org: OrganizationCreate) -> Organization:
     db.commit()
     db.refresh(db_org)
     return db_org
+
+def get_organizations(
+    db: Session, 
+    organization_id: Optional[int] = None,
+    skip: int = 0, 
+    limit: int = 10
+) -> Union[Organization, List[Organization]]:
+    query = db.query(Organization)
+
+    if organization_id:
+        return query.filter(Organization.id == organization_id).first()
+
+    return query.offset(skip).limit(limit).all()
 
 def update_organization(db: Session, organization_id: int, org: OrganizationCreate) -> Organization:
     db_org = db.query(Organization).filter(Organization.id == organization_id).first()
@@ -36,23 +43,26 @@ def delete_organization(db: Session, organization_id: int) -> Organization:
     return db_org
 
 # Router Endpoints
+
+organization_router = APIRouter()
+
 @organization_router.post("/", response_model=Organization)
 def create_new_organization(org: OrganizationCreate, db: Session = Depends(get_db)):
     return create_organization(db, org)
 
-@organization_router.get("/", response_model=list[Organization])
-def read_organizations(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+@organization_router.get("/", response_model=List[Organization])
+def read_all_organizations(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return get_organizations(db, skip=skip, limit=limit)
 
 @organization_router.get("/{organization_id}", response_model=Organization)
 def read_organization(organization_id: int, db: Session = Depends(get_db)):
-    db_organization = get_organization_by_id(db, organization_id)
+    db_organization = get_organizations(db, organization_id=organization_id)
     if db_organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
     return db_organization
 
 @organization_router.put("/{organization_id}", response_model=Organization)
-def update_existing_organization(organization_id: int, org: OrganizationCreate, db: Session = Depends(get_db)):
+def update_existing_organization(organization_id: int, org: OrganizationUpdate, db: Session = Depends(get_db)):
     updated_organization = update_organization(db, organization_id, org)
     if updated_organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")

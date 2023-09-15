@@ -1,5 +1,5 @@
 from typing import List, Optional, Union
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -41,39 +41,44 @@ def update_template(db: Session, template_id: UUID, template: schema.TemplateUpd
     return db_template
 
 def delete_template(db: Session, template_id: UUID) -> Optional[models.Template]:
-    db_template = db.query(models.Template).filter(models.Template.id == template_id).first()
-    if db_template:
-        db.delete(db_template)
-        db.commit()
-    return db_template
+    deleted = db.query(models.Template).filter(models.Template.id == template_id).delete()
+    db.commit()
+    if not deleted:
+        return None
+    return deleted
 
 # ------------------------- FastAPI Router Endpoints -------------------------
 
 template_router = APIRouter()
 
-@template_router.post("/", response_model=schema.Template)
+@template_router.post("/templates/", response_model=schema.Template)
 def create_new_template(template: schema.TemplateCreate, db: Session = Depends(database.get_db)) -> models.Template:
     return create_template(db, template)
 
-@template_router.get("/", response_model=List[schema.Template])
-def read_templates(organization_id: Optional[int] = None, skip: int = 0, limit: int = 10, db: Session = Depends(database.get_db)) -> List[models.Template]:
+@template_router.get("/templates/", response_model=List[schema.Template])
+def read_templates(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, le=100),
+    organization_id: Optional[int] = None, 
+    db: Session = Depends(database.get_db)
+) -> List[models.Template]:
     return get_templates(db, organization_id=organization_id, skip=skip, limit=limit)
 
-@template_router.get("/{template_id}", response_model=schema.Template)
+@template_router.get("/templates/{template_id}", response_model=schema.Template)
 def read_template(template_id: UUID, db: Session = Depends(database.get_db)) -> models.Template:
     db_template = get_templates(db, template_id=template_id)
-    if db_template is None:
+    if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
     return db_template
 
-@template_router.put("/{template_id}", response_model=schema.Template)
+@template_router.put("/templates/{template_id}", response_model=schema.Template)
 def update_existing_template(template_id: UUID, template: schema.TemplateUpdate, db: Session = Depends(database.get_db)) -> models.Template:
     updated_template = update_template(db, template_id, template)
     if updated_template is None:
         raise HTTPException(status_code=404, detail="Template not found")
     return updated_template
 
-@template_router.delete("/{template_id}", response_model=schema.Template)
+@template_router.delete("/templates/{template_id}", response_model=schema.Template)
 def delete_a_template(template_id: UUID, db: Session = Depends(database.get_db)) -> models.Template:
     db_template = delete_template(db, template_id)
     if db_template is None:

@@ -3,9 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
 from database.database import Base
-from cryptography.fernet import Fernet
 from sqlalchemy.ext.hybrid import hybrid_property
-from config import SECRET_KEY
 
 class Organization(Base):
     __tablename__ = "organization"
@@ -25,20 +23,21 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4, nullable=False)
     organization_id = Column(Integer, ForeignKey("organization.id"))
     organization = relationship("Organization", back_populates="users")
+    people = relationship("Person", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
 
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     password = Column(String)
     name = Column(String, nullable=True)
     permission = Column(String, default="user")
+
     _access_token = Column("access_token", String, nullable=True)  # Raw encrypted token
     _refresh_token = Column("refresh_token", String, nullable=True)  # Raw encrypted token
+
     last_login = Column(DateTime(timezone=True), server_default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    people = relationship("Person", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")
 
     @hybrid_property
     def access_token(self):
@@ -66,6 +65,7 @@ class Notification(Base):
 
     type = Column(String)
     data = Column(JSONB)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -77,15 +77,15 @@ class Person(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey('user.id'))
     organization = relationship("Organization")
     user = relationship("User", back_populates="people")
+    availabilities = relationship("Availability", back_populates="person")
 
-    email = Column(String, unique=True, index=True)
+    email = Column(String)
     name = Column(String)
     role = Column(String)
     data = Column(JSONB)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    availabilities = relationship("Availability", back_populates="person")
 
 
 class Availability(Base):
@@ -102,9 +102,14 @@ class Job(Base):
     __tablename__ = "job"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     organization_id = Column(Integer, ForeignKey('organization.id'))
+    templates = relationship("Template", back_populates="job")
+
+    job_title = Column(String)
     data = Column(JSONB)
 
-    templates = relationship("Template", back_populates="job")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 
 
 class Template(Base):
@@ -131,5 +136,6 @@ class Event(Base):
 
     completed = Column(Boolean, default=False)
     data = Column(JSONB)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
