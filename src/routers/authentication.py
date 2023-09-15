@@ -5,10 +5,17 @@ from starlette.responses import RedirectResponse
 from utils import get_secret, encrypt
 from sqlalchemy.orm import Session
 from database.database import get_db
-from database.crud import update_person_data_by_email
+from database.schema import Person
 
-# Initialize the router
-authentication_router = APIRouter()
+def update_person_data_by_email(db: Session, email: str, data: dict):
+    person = db.query(Person).filter(Person.email == email).first()
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+    for key, value in data.items():
+        setattr(person, key, value)
+    db.commit()
+    db.refresh(person)
+    return person
 
 # Setting up OAuth2.0
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -28,6 +35,9 @@ oauth.register(
     redirect_uri=get_secret("REDIRECT_URL"),
     client_kwargs={'scope': 'openid profile email'},
 )
+
+# Initialize the router
+authentication_router = APIRouter()
 
 @authentication_router.get('/google/login')
 async def login(request: Request):
