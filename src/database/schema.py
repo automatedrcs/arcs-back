@@ -40,6 +40,10 @@ class PersonBase(BaseModel):
 class PersonCreate(PersonBase):
     pass
 
+class PersonUpdate(PersonBase):
+    email: Optional[str]
+    name: Optional[str]
+
 class Person(PersonBase):
     id: UUID
     created_at: datetime
