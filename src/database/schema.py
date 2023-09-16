@@ -49,6 +49,9 @@ class NotificationBase(BaseModel):
 class NotificationCreate(NotificationBase):
     pass
 
+class NotificationUpdate(NotificationBase):
+    pass
+
 class Notification(NotificationBase):
     id: UUID
     created_at: datetime
