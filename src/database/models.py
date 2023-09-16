@@ -5,6 +5,7 @@ import uuid
 from database.database import Base
 from sqlalchemy.ext.hybrid import hybrid_property
 
+
 class Organization(Base):
     __tablename__ = "organization"
     id = Column(Integer, primary_key=True, index=True)
@@ -109,7 +110,6 @@ class Job(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
 
 
 class Template(Base):
