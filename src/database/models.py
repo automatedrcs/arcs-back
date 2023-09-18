@@ -4,7 +4,10 @@ from sqlalchemy.orm import relationship
 import uuid
 from database.database import Base
 from sqlalchemy.ext.hybrid import hybrid_property
+from cryptography.fernet import Fernet
+from config import SECRET_KEY
 
+cipher_suite = Fernet(SECRET_KEY)
 
 class Organization(Base):
     __tablename__ = "organization"
