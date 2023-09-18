@@ -1,4 +1,4 @@
-from src.models.person import Base, engine
+from database.database import Base, engine
 
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)

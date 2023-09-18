@@ -17,4 +17,5 @@ pyjwt
 datetime
 bcrypt
 psycopg2
+# psycopg2-binary
 uuid
