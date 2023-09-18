@@ -2,8 +2,8 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, f
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
-from database.database import Base
 from sqlalchemy.ext.hybrid import hybrid_property
+from database.database import Base
 from cryptography.fernet import Fernet
 from config import SECRET_KEY
 
