@@ -5,9 +5,9 @@ import uuid
 from sqlalchemy.ext.hybrid import hybrid_property
 from database.database import Base
 from cryptography.fernet import Fernet
-from config import SECRET_KEY
+from config import FERNET_KEY
 
-cipher_suite = Fernet(SECRET_KEY)
+cipher_suite = Fernet(FERNET_KEY)
 
 class Organization(Base):
     __tablename__ = "organization"
