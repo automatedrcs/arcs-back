@@ -19,6 +19,7 @@ def main():
         print("Tables created successfully.")
     except Exception as e:
         print(f"An error occurred: {e}")
+    logging.info("Tables created.")
     
 def check_tables():
     inspector = inspect(engine)
