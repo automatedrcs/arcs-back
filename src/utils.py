@@ -8,7 +8,7 @@ def get_secret(secret_id, version_id="latest"):
     response = client.access_secret_version(request={"name": secret_name})
     return response.payload.data.decode('UTF-8')
 
-cipher_suite = Fernet(get_secret("ENCRYPTION_KEY"))
+cipher_suite = Fernet(get_secret("FERNET_KEY"))
 
 def encrypt(data: str) -> str:
     encoded_data = data.encode()

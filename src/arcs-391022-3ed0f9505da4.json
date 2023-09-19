@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "arcs-391022",
+  "private_key_id": "3ed0f9505da45ddaafec69c995d82e2cce438a9d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCg0TpXv9Wh/Dmt\npGSXY7m6qWzCJEbHfnUXDmcop//hN2ZSjbK1Se/Xev724t67DkPqzhj8ZFD3WKo8\n6nbOuLE5oxOfmVNEmAjHUiQi0z2Zr11+lSdXmKFQgC1/rfOYTuv4IGcdCEVsXEBd\nYwt7wEZ9DEpuGuCg8ucSMkKkvJmobtuWAFASfPIP5XZdRTu1tW+2c0i1Lk5mZIzp\nZmz6ZkL/4COuSjXy5ugxCv75hWQgTjJ66fQK23mNnpUTOWrSeaW2wWuGUGTx+E9Z\nZ9qf7nVrzOh3HD3zTacXdReeQMtyhBAZ9myk0wb0OpvTsJ/S1aBz+Bluf4wIAiY/\nLXPSt1ABAgMBAAECggEAK/Y2UEGZSXBVZiH/+6Cf56akHAhlruhjYtulmKggW3VV\nC/E/bq6ZGZs+csg/Ifx61Yfkra5QseUzmHZx5v33OK3bUfBMon47PB240ipT9xzI\n3q8wc5I+Wu7HQVWQt0yv1gMpnPajX8VyNPU78Ob1ff6rpCDF0knEoCVMMZN7H99K\npwa1/sELQFg3St2BglrVgtofqaJ2SvYR0qJry54qtRAV4PFqu9sqw1PMj4AWnzVi\nmdX8EKg5NeaiMub8Pe25U229QZEMu1YWffQ16vYoOq+/g4MWPU26Q6ym0+k0PoWn\nic6kejgL1XZNDUwu3yQBTtYaunXnE+Bxm82qoBL2xwKBgQDh0FovdtCpJU6Kpvjw\nxYem3t8Y9brAxYEzn5yXgsIgCpttC2Nc8o7EwEibjxYLSNH9iNW76xYryxXRKVC/\n9Qewdv2e0DFmIyKhFQqLa/BeTAr0GLYgfaX2M4/VnCC81kbkFZVX0Z0a/8OyQ6Mw\nHvWl7b8qCGDZpexKGIzuLhFQ2wKBgQC2UJtyIQqokDtJ5EisFDCsQsZ4aZP6CQ1K\nfR6HDeL2Q9dSj5BovZ1ap4eCyJ0V2WgwstN/TA5o4uisdRHasx7nqjgefBZ9K302\nAfdiuEZR7UCehaSc5noJIpzL+Hq/wjp/vRoCak4tUjxyjYbtwEegdgqASqAbehr7\nnpptvakbUwKBgAZ+tKla1IOY9Bpe1RgvxkgRbv9LyhRTWfT/KUTeWPEM/Q1032XE\nAEE+epgm1G58qLWPIv6ls1yNGdKLSqxKwu7bbU4NFO6oIg3aChSahS5hJ4t/znU+\nx/A96Wwucm6cByv2RvZgrBEjvCA7e80dhtk/7liqJwb7k8FJ1XvgTVUzAoGAAg2S\nUoywtAk7wa9Caj2n9qih14VI1032ylnyWA79+Uv2RsW7GJLaDMVKL1zW+AIEvFen\nLg3LM78qY5bF5rKRrIYsL5uyHSK6PDt1b7UnhZCoY6CZo/KseSHcpidcKoCjbADT\nJCfSTYxZhei2FkNOCy6JG7y7ZNPRLfgxQP8bwmUCgYBWX2uG6jgwryuq4i7N5SFF\nZfgSzHqFrXZeKVI2Y+2Jxu86QxfIFuHQawVRTrL2Z4XtczPysAU8nHLYZQ55wMdE\nx/6kiCcW1ditlA8M5Upjx60LG9AIaZaWSS2Ncq33/5GKrENAWy+O7nnUapDzEli4\nqCpwPbCBh9I8eA4dFgkGbg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "cloudrun-sql-proxy@arcs-391022.iam.gserviceaccount.com",
+  "client_id": "102713676663090217015",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/cloudrun-sql-proxy%40arcs-391022.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
