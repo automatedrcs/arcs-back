@@ -3,7 +3,7 @@ from utils import get_secret
 
 USERNAME = get_secret("DB_USERNAME")
 PASSWORD = get_secret("DB_PASSWORD")
-HOST = "10.223.0.8"
+HOST = "localhost"
 DBNAME = "arcs-db"
 PORT = 5432
 
