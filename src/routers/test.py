@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import APIRouter
 
-test_router = FastAPI()
+test_router = APIRouter()
 
 @test_router.get("/api/data")
 def get_data():
