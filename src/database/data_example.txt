@@ -1,0 +1,59 @@
+
+Organization.data
+{
+    tree:
+        Department:
+            R&D:
+                Team:
+                    Engineering
+                        Title:
+                            Software Engineer:
+                                Programming Languages:
+                                    Python,
+                                    C++
+                                Level:
+                                    L3,
+                                    L2
+                        Title:
+                            Project Manager:
+                                Years of Experience:
+                                    4 years
+
+            Sales:
+                Team:
+                    Marketing:
+                        Title:
+                            Social Media Manager:
+                                Skills:
+                                    Twitter
+}
+
+Person.data
+{
+    tree:
+        Department:
+            R&D:
+                Team:
+                    Engineering:
+                        Title:
+                            Software Engineer:
+                                Programming Languages:
+                                    Python
+                                    C++
+                                Level:
+                                    L3
+
+}
+
+Template.data
+{
+    tags:
+        Programming Languages:
+            Python
+        Level:
+            L3
+        Department:
+            R&D
+}
+
+forgoing {} and , and "" for easy reading

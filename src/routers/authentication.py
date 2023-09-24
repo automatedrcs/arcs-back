@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
-from utils import get_secret, encrypt
+from utils import encrypt
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.schema import Person
+from config import oauth2_scheme, credentials_exception, oauth
 
 def update_person_data_by_email(db: Session, email: str, data: dict):
     person = db.query(Person).filter(Person.email == email).first()
@@ -20,25 +21,6 @@ def handle_user_oauth_data(db: Session, user: dict, token: dict):
     if 'refresh_token' in token:
         encrypted_refresh_token = encrypt(token['refresh_token'])
         update_person_data_by_email(db, user["email"], {"refresh_token": encrypted_refresh_token})
-
-# Setting up OAuth2.0
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
-)
-
-oauth = OAuth()
-oauth.register(
-    name='google',
-    client_id=get_secret("CLIENT_ID"),
-    client_secret=get_secret("CLIENT_SECRET"),
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    redirect_uri=get_secret("REDIRECT_URL"),
-    client_kwargs={'scope': 'openid profile email'},
-)
 
 authentication_router = APIRouter()
 
