@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, Body
 from typing import Optional
 from pydantic import BaseModel
 
-from scripts import generate_interview
-from scripts import schedule_interview
+from scripts.generate_interview import generate_interview
+from scripts.schedule_interview import schedule_interview
 
 scheduler_router = FastAPI()
 

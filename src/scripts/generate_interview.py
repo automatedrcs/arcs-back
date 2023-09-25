@@ -1,5 +1,7 @@
 from typing import List, Dict, Any, Union
 from fastapi import HTTPException
+from datetime import timedelta
+
 
 async def getInterviewDuration(style_id: int) -> int:
     # Dummy function to retrieve interview duration
@@ -30,7 +32,7 @@ def shuffle(lst: List[Any]) -> List[Any]:
     random.shuffle(lst)
     return lst
 
-async def generateInterview(job_id: int, style_id: int, candidate_id: int, organization_id: int) -> Dict[str, Union[str, int]]:
+async def generate_interview(job_id: int, style_id: int, candidate_id: int, organization_id: int) -> Dict[str, Union[str, int]]:
     interview_duration = await getInterviewDuration(style_id)
     candidate_availability = await getCandidateAvailability(candidate_id)
     qualified_interviewers = await getQualifiedInterviewers(job_id, style_id, organization_id)

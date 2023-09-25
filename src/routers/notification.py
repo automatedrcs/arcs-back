@@ -57,7 +57,7 @@ notification_router = APIRouter()
 
 @notification_router.post("/notifications/", response_model=schema.Notification)
 def create_notification_endpoint(notification: schema.NotificationCreate, db: Session = Depends(get_db)) -> models.Notification:
-    return crud.create_notification(db=db, notification=notification)
+    return create_notification(db=db, notification=notification)
 
 @notification_router.get("/notifications/", response_model=List[schema.Notification])
 def read_notifications(
@@ -68,18 +68,18 @@ def read_notifications(
         limit: int = Query(100, ge=0, le=500),
         db: Session = Depends(get_db)
 ) -> List[models.Notification]:
-    return crud.get_notifications(db, organization_id, notification_id, user_id, skip, limit)
+    return get_notifications(db, organization_id, notification_id, user_id, skip, limit)
 
 @notification_router.put("/notifications/{notification_id}", response_model=schema.Notification)
 def update_notification_endpoint(notification_id: UUID, notification: schema.NotificationUpdate, db: Session = Depends(get_db)):
-    db_notification = crud.update_notification(db, notification_id, notification)
+    db_notification = update_notification(db, notification_id, notification)
     if db_notification is None:
         raise HTTPException(status_code=404, detail="Notification not found")
     return db_notification
 
 @notification_router.delete("/notifications/{notification_id}", response_model=schema.Notification)
 def delete_notification_endpoint(notification_id: UUID, db: Session = Depends(get_db)):
-    was_deleted = crud.delete_notification(db, notification_id)
+    was_deleted = delete_notification(db, notification_id)
     if not was_deleted:
         raise HTTPException(status_code=404, detail="Notification not found")
     return {"id": notification_id, "status": "deleted"}

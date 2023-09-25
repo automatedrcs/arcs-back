@@ -44,7 +44,7 @@ job_router = APIRouter()
 
 @job_router.post("/jobs/", response_model=schema.Job)
 def create_new_job(job: schema.JobCreate, db: Session = Depends(database.get_db)) -> models.Job:
-    return crud.create_job(db, job)
+    return create_job(db, job)
 
 @job_router.get("/jobs/", response_model=List[schema.Job])
 def read_jobs(
@@ -53,18 +53,18 @@ def read_jobs(
     organization_id: Optional[int] = None, 
     db: Session = Depends(database.get_db)
 ) -> List[models.Job]:
-    return crud.get_jobs(db, skip=skip, limit=limit, organization_id=organization_id)
+    return get_jobs(db, skip=skip, limit=limit, organization_id=organization_id)
 
 @job_router.put("/jobs/{job_id}", response_model=schema.Job)
 def update_existing_job(job_id: UUID, job: schema.JobUpdate, db: Session = Depends(database.get_db)) -> models.Job:
-    updated_job = crud.update_job(db, job_id, job)
+    updated_job = update_job(db, job_id, job)
     if updated_job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return updated_job
 
 @job_router.delete("/jobs/{job_id}", response_model=schema.Job)
 def delete_a_job(job_id: UUID, db: Session = Depends(database.get_db)) -> models.Job:
-    db_job = crud.delete_job(db, job_id)
+    db_job = delete_job(db, job_id)
     if db_job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return db_job

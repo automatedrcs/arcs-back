@@ -12,6 +12,7 @@ from routers.job import job_router
 from routers.template import template_router
 from routers.event import event_router
 from routers.test import test_router
+from routers.scheduler import scheduler_router
 
 app = FastAPI()
 
@@ -35,3 +36,4 @@ app.include_router(job_router, prefix="/job", tags=["Job"])
 app.include_router(template_router, prefix="/template", tags=["Template"])
 app.include_router(event_router, prefix="/event", tags=["Event"])
 app.include_router(test_router, prefix="/test", tags=["Test"])
+app.include_router(scheduler_router, prefix="/scheduler", tags=["Automation", "Scheduler"])

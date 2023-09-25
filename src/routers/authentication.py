@@ -1,11 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
-from authlib.integrations.starlette_client import OAuth
+from fastapi import APIRouter, Depends, HTTPException, Request
 from utils import encrypt
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.schema import Person
-from config import oauth2_scheme, credentials_exception, oauth
+from config import oauth
 
 def update_person_data_by_email(db: Session, email: str, data: dict):
     person = db.query(Person).filter(Person.email == email).first()
@@ -26,7 +24,7 @@ authentication_router = APIRouter()
 
 @authentication_router.get('/google/login')
 async def login(request: Request):
-    redirect_uri = url_for('auth')
+    redirect_uri = request.url_for('auth')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @authentication_router.get('/google/callback')
