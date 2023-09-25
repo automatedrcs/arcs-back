@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException, APIRouter
 from pydantic import BaseModel
 
 from scripts.generate_interview import generate_interview
 from scripts.schedule_interview import schedule_interview
 
-scheduler_router = FastAPI()
+scheduler_router = APIRouter()
 
 class GenerateInterviewInput(BaseModel):
     job_id: int
