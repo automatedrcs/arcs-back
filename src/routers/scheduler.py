@@ -1,5 +1,4 @@
-from fastapi import FastAPI, HTTPException, Body
-from typing import Optional
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from scripts.generate_interview import generate_interview
