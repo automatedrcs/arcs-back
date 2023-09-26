@@ -79,9 +79,10 @@ class Person(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4, nullable=False)
     organization_id = Column(Integer, ForeignKey('organization.id'))
     user_id = Column(UUID(as_uuid=True), ForeignKey('user.id'))
-    organization = relationship("Organization")
+    organization = relationship("Organization", back_populates="people")
     user = relationship("User", back_populates="people")
     availabilities = relationship("Availability", back_populates="person")
+    
 
     email = Column(String)
     name = Column(String)
@@ -107,6 +108,7 @@ class Job(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     organization_id = Column(Integer, ForeignKey('organization.id'))
     templates = relationship("Template", back_populates="job")
+    organization = relationship("Organization", back_populates="jobs")
 
     job_title = Column(String)
     data = Column(JSONB)
@@ -121,13 +123,13 @@ class Template(Base):
     organization_id = Column(Integer, ForeignKey('organization.id'))
     job_id = Column(UUID(as_uuid=True), ForeignKey('job.id'), nullable=True)
     parent_id = Column(UUID(as_uuid=True), ForeignKey('template.id'), nullable=True)
+    events = relationship("Event", back_populates="template")
+    parent = relationship("Template", remote_side=[id], backref="children") 
 
     template_name = Column(String)
     data = Column(JSONB)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    events = relationship("Event", back_populates="template")
 
 
 class Event(Base):
