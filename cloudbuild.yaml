@@ -7,7 +7,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/arcs-back']
 
-  # Deploy the image to Cloud Run with the sidecar
+  # Deploy the image to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -22,11 +22,8 @@ steps:
       - '--allow-unauthenticated'
       - '--add-cloudsql-instances'
       - 'arcs-391022:us-central1:arcs-sql-instance'
-      # - '--set-env-vars'
       - '--service-account'
       - '994970677374-compute@developer.gserviceaccount.com'
-      - '--vpc-connector'
-      - 'vpc-connector' 
 
 images:
   - 'gcr.io/$PROJECT_ID/arcs-back'

@@ -4,14 +4,14 @@ from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
 
-USERNAME = get_secret("DB_USERNAME")
-PASSWORD = get_secret("DB_PASSWORD")
-HOST = "localhost"
-DBNAME = "arcs-db"
+DB_USERNAME = get_secret("DB_USERNAME")
+DB_PASSWORD = get_secret("DB_PASSWORD")
+CLOUD_SQL_CONNECTION_NAME = get_secret("CLOUD_SQL_CONNECTION_NAME")
+DB_NAME = get_secret("DB_NAME")
 PORT = 5432
 
 # Construct the DATABASE_URL
-DATABASE_URL = f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}"
+DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@/{DB_NAME}?host=/cloudsql/{CLOUD_SQL_CONNECTION_NAME}"
 
 # CORS origins
 ORIGINS = [

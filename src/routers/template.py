@@ -2,7 +2,6 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
-
 from database import models, schema, database
 
 # ------------------------- CRUD Operations -------------------------
