@@ -139,6 +139,7 @@ class Event(Base):
     organization_id = Column(Integer, ForeignKey('organization.id'))
     template_id = Column(UUID(as_uuid=True), ForeignKey('template.id'))
     template = relationship("Template", back_populates="events")
+    organization = relationship("Organization", back_populates="events")
 
     completed = Column(Boolean, default=False)
     data = Column(JSONB)
