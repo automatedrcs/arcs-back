@@ -1,0 +1,4 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/arcs-391022/migrations:latest', '.']
+images: ['gcr.io/arcs-391022/migrations:latest']

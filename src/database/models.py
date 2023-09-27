@@ -124,7 +124,8 @@ class Template(Base):
     job_id = Column(UUID(as_uuid=True), ForeignKey('job.id'), nullable=True)
     parent_id = Column(UUID(as_uuid=True), ForeignKey('template.id'), nullable=True)
     events = relationship("Event", back_populates="template")
-    parent = relationship("Template", remote_side=[id], backref="children") 
+    parent = relationship("Template", remote_side=[id], backref="children")
+    organization = relationship("Organization", back_populates="templates") 
 
     template_name = Column(String)
     data = Column(JSONB)
