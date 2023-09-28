@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy.orm import Session
 from database import models, database
 
 test_router = APIRouter()
@@ -16,17 +14,17 @@ def get_data():
     }
 
 @test_router.get("/api/connection-test")
-async def test_connection(db: AsyncSession = Depends(database.get_db)):
+def test_connection(db: Session = Depends(database.get_db)):
     try:
         # Attempt to fetch the first row from the Organization table
-        result = await db.execute(select(models.Organization).order_by(models.Organization.id).limit(1))
-        organization = await result.scalars().first()
-        if organization:
+        result = db.query(models.Organization).order_by(models.Organization.id).first()
+        
+        if result:
             return {
                 "message": "Connection successful. Data fetched successfully.",
                 "data": {
-                    "organization_name": organization.name,
-                    "organization_data": organization.data
+                    "organization_name": result.name,
+                    "organization_data": result.data
                 }
             }
         # If there is no data in the table
