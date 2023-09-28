@@ -20,7 +20,7 @@ async def test_connection(db: AsyncSession = Depends(database.get_db)):
     try:
         # Attempt to fetch the first row from the Organization table
         result = await db.execute(select(models.Organization).order_by(models.Organization.id).limit(1))
-        organization = result.fetchone()
+        organization = result.scalars().first()
         if organization:
             return {
                 "message": "Connection successful. Data fetched successfully.",
