@@ -15,7 +15,7 @@ gcloud run deploy migrations-service `
 Start-Sleep -Seconds 20
 
 # Check the logs to confirm if migrations ran successfully:
-gcloud logs read --limit=50 --service=migrations-service --region=$REGION
+gcloud functions logs read --limit=50 --service=migrations-service --region=$REGION
 
 # Optionally, delete the service after you've verified the logs
 gcloud run services delete migrations-service --region $REGION --quiet
