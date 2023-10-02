@@ -19,6 +19,7 @@ def get_notifications(
         organization_id: int,
         notification_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
+        type: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
 ) -> Union[models.Notification, List[models.Notification]]:
@@ -33,6 +34,9 @@ def get_notifications(
 
     if user_id:
         query = query.filter(models.Notification.user_id == user_id)
+
+    if type:
+        query = query.filter(models.Notification.type == type)
 
     return query.offset(skip).limit(limit).all()
 
@@ -55,29 +59,30 @@ def delete_notification(db: Session, notification_id: UUID) -> bool:
 
 notification_router = APIRouter()
 
-@notification_router.post("/notifications/", response_model=schema.Notification)
+@notification_router.post("/", response_model=schema.Notification)
 def create_notification_endpoint(notification: schema.NotificationCreate, db: Session = Depends(get_db)) -> models.Notification:
     return create_notification(db=db, notification=notification)
 
-@notification_router.get("/notifications/", response_model=List[schema.Notification])
+@notification_router.get("/", response_model=List[schema.Notification])
 def read_notifications(
         organization_id: int,
         notification_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
+        type: Optional[str] = None,
         skip: int = Query(0, ge=0),
         limit: int = Query(100, ge=0, le=500),
         db: Session = Depends(get_db)
 ) -> List[models.Notification]:
     return get_notifications(db, organization_id, notification_id, user_id, skip, limit)
 
-@notification_router.put("/notifications/{notification_id}", response_model=schema.Notification)
+@notification_router.put("/{notification_id}", response_model=schema.Notification)
 def update_notification_endpoint(notification_id: UUID, notification: schema.NotificationUpdate, db: Session = Depends(get_db)):
     db_notification = update_notification(db, notification_id, notification)
     if db_notification is None:
         raise HTTPException(status_code=404, detail="Notification not found")
     return db_notification
 
-@notification_router.delete("/notifications/{notification_id}", response_model=schema.Notification)
+@notification_router.delete("/{notification_id}", response_model=schema.Notification)
 def delete_notification_endpoint(notification_id: UUID, db: Session = Depends(get_db)):
     was_deleted = delete_notification(db, notification_id)
     if not was_deleted:

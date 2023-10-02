@@ -50,11 +50,11 @@ def delete_template(db: Session, template_id: UUID) -> Optional[models.Template]
 
 template_router = APIRouter()
 
-@template_router.post("/templates/", response_model=schema.Template)
+@template_router.post("/", response_model=schema.Template)
 def create_new_template(template: schema.TemplateCreate, db: Session = Depends(database.get_db)) -> models.Template:
     return create_template(db, template)
 
-@template_router.get("/templates/", response_model=List[schema.Template])
+@template_router.get("/", response_model=List[schema.Template])
 def read_templates(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, le=100),
@@ -63,21 +63,21 @@ def read_templates(
 ) -> List[models.Template]:
     return get_templates(db, organization_id=organization_id, skip=skip, limit=limit)
 
-@template_router.get("/templates/{template_id}", response_model=schema.Template)
+@template_router.get("/{template_id}", response_model=schema.Template)
 def read_template(template_id: UUID, db: Session = Depends(database.get_db)) -> models.Template:
     db_template = get_templates(db, template_id=template_id)
     if not db_template:
         raise HTTPException(status_code=404, detail="Template not found")
     return db_template
 
-@template_router.put("/templates/{template_id}", response_model=schema.Template)
+@template_router.put("/{template_id}", response_model=schema.Template)
 def update_existing_template(template_id: UUID, template: schema.TemplateUpdate, db: Session = Depends(database.get_db)) -> models.Template:
     updated_template = update_template(db, template_id, template)
     if updated_template is None:
         raise HTTPException(status_code=404, detail="Template not found")
     return updated_template
 
-@template_router.delete("/templates/{template_id}", response_model=schema.Template)
+@template_router.delete("/{template_id}", response_model=schema.Template)
 def delete_a_template(template_id: UUID, db: Session = Depends(database.get_db)) -> models.Template:
     db_template = delete_template(db, template_id)
     if db_template is None:

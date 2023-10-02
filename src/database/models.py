@@ -19,7 +19,7 @@ class Organization(Base):
     people = relationship("Person", back_populates="organization")
     jobs = relationship("Job", back_populates="organization")
     templates = relationship("Template", back_populates="organization")
-    events = relationship("Event", back_populates="organization")
+    meetings = relationship("Meeting", back_populates="organization")
 
 
 class User(Base):
@@ -123,7 +123,7 @@ class Template(Base):
     organization_id = Column(Integer, ForeignKey('organization.id'))
     job_id = Column(UUID(as_uuid=True), ForeignKey('job.id'), nullable=True)
     parent_id = Column(UUID(as_uuid=True), ForeignKey('template.id'), nullable=True)
-    events = relationship("Event", back_populates="template")
+    meetings = relationship("Meeting", back_populates="template")
     parent = relationship("Template", remote_side=[id], backref="children")
     organization = relationship("Organization", back_populates="templates")
     job = relationship("Job", back_populates="templates")
@@ -134,13 +134,13 @@ class Template(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
-class Event(Base):
-    __tablename__ = "event"
+class Meeting(Base):
+    __tablename__ = "meeting"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     organization_id = Column(Integer, ForeignKey('organization.id'))
     template_id = Column(UUID(as_uuid=True), ForeignKey('template.id'))
-    template = relationship("Template", back_populates="events")
-    organization = relationship("Organization", back_populates="events")
+    template = relationship("Template", back_populates="meetings")
+    organization = relationship("Organization", back_populates="meetings")
 
     completed = Column(Boolean, default=False)
     data = Column(JSONB)

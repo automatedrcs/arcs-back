@@ -56,7 +56,7 @@ availability_router = APIRouter()
 def create_new_availability(availability: AvailabilityCreate, db: Session = Depends(get_db)) -> AvailabilityModel:
     return create_availability(db, availability)
 
-@availability_router.get("/person/{person_id}/availabilities", response_model=List[Availability])
+@availability_router.get("/person/{person_id}", response_model=List[Availability])
 def read_availabilities(
     person_id: UUID,
     skip: int = 0, 

@@ -133,19 +133,19 @@ class Template(TemplateBase):
     class Config:
         orm_mode = True
 
-class EventBase(BaseModel):
+class MeetingBase(BaseModel):
     organization_id: int
     template_id: UUID
     completed: bool
     data: dict
 
-class EventCreate(EventBase):
+class MeetingCreate(MeetingBase):
     pass
 
-class EventUpdate(EventBase):
+class MeetingUpdate(MeetingBase):
     pass
 
-class Event(EventBase):
+class Meeting(MeetingBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
