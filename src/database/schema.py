@@ -1,12 +1,13 @@
 # Pydantic Schemas
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
 class OrganizationBase(BaseModel):
     name: str
+    data: Dict[str, Any]
 
 class OrganizationCreate(OrganizationBase):
     pass
