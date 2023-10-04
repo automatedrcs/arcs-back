@@ -12,7 +12,13 @@ import bcrypt
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
-# Helper Functions
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
+# Utility Functions
 def hash_password(password: str):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
@@ -123,8 +129,11 @@ def refresh_token_endpoint(refresh_token: str = Header(...), db: Session = Depen
         return {"access_token": new_access_token, "token_type": "bearer"}
     except jwt.JWTError:
         raise credentials_exception
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
-)
+
+@user_router.get("/me/")
+def get_my_details(current_user: User = Depends(get_current_user)):
+    # Return user details. Modify as needed.
+    return {
+        "userUUID": str(current_user.id),
+        "organizationId": str(current_user.organization_id)
+    }
