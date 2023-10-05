@@ -9,8 +9,10 @@ class OrganizationBase(BaseModel):
     name: str
     data: Dict[str, Any]
 
-class OrganizationCreate(OrganizationBase):
-    pass
+class OrganizationCreate(BaseModel):
+    id: Optional[int]
+    name: str
+    description: Optional[str]
 
 class OrganizationUpdate(OrganizationBase):
     pass

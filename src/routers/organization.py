@@ -7,7 +7,7 @@ from database.schema import OrganizationCreate, Organization, OrganizationUpdate
 # CRUD Functions
 
 def create_organization(db: Session, org: OrganizationCreate) -> Organization:
-    db_org = Organization(**org.dict())
+    db_org = Organization(**org.model_dump())
     db.add(db_org)
     db.commit()
     db.refresh(db_org)
