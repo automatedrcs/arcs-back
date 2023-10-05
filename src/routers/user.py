@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import jwt
 import bcrypt
 from typing import Optional
+from uuid import UUID
 
 from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from database.database import get_db
@@ -20,28 +21,27 @@ credentials_exception = HTTPException(
 )
 
 # Utility Functions
-def hash_password(password: str):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-def verify_password(plain_password: str, hashed_password: str):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def create_access_token(data: dict):
+def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(data: dict):
+def create_refresh_token(data: dict) -> str:
     return jwt.encode(data, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
-def decode_token(token: str):
+def decode_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
 
 # CRUD Operations
-
-def create_user(db: Session, user: UserCreate, organization_id: int):
+def create_user(db: Session, user: UserCreate, organization_id: int) -> User:
     hashed_password = hash_password(user.password)
     db_user = User(organization_id=organization_id, username=user.username, password=hashed_password, email=user.email)
     db.add(db_user)
@@ -49,8 +49,7 @@ def create_user(db: Session, user: UserCreate, organization_id: int):
     db.refresh(db_user)
     return db_user
 
-
-def get_user(db: Session, organization_id: Optional[int] = None, username: Optional[str] = None, user_id: Optional[UUID] = None):
+def get_user(db: Session, organization_id: Optional[int] = None, username: Optional[str] = None, user_id: Optional[UUID] = None) -> Optional[User]:
     if not any([organization_id, username, user_id]):
         raise ValueError("Must provide at least one filter criteria for get_user")
     
@@ -63,21 +62,24 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
         query = query.filter(User.id == user_id)
     return query.first()
 
-
-def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str):
+def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> User:
     db_user = db.query(User).filter(User.username == username).first()
-    if db_user:
-        db_user.access_token = access_token
-        db_user.refresh_token = refresh_token
-        try:
-            db.commit()
-            db.refresh(db_user)
-        except:
-            db.rollback()
-            raise
+    if not db_user:
+        raise ValueError("User not found")
+
+    db_user.access_token = access_token
+    db_user.refresh_token = refresh_token
+
+    try:
+        db.commit()
+        db.refresh(db_user)
+    except:
+        db.rollback()
+        raise
+
     return db_user
 
-def delete_user(db: Session, user_id: UUID):
+def delete_user(db: Session, user_id: UUID) -> Optional[User]:
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user:
         db.delete(db_user)
@@ -88,18 +90,17 @@ def delete_user(db: Session, user_id: UUID):
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     try:
         payload = decode_token(token)
+        username = payload.get("sub")
+        if not username:
+            raise credentials_exception
+        user = get_user(db, username=username)
+        if not user:
+            raise credentials_exception
     except jwt.JWTError:
-        raise credentials_exception
-    username = payload.get("sub")
-    if not username:
-        raise credentials_exception
-    user = get_user(db, username=username)
-    if not user:
         raise credentials_exception
     return user
 
 # Router Endpoints
-
 user_router = APIRouter()
 
 @user_router.post("/signup")
@@ -111,7 +112,6 @@ def signup(user_data: UserCreate = Body(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Organization not found")
     create_user(db, user_data, organization.id)
     return {"message": "User created successfully"}
-
 
 @user_router.post("/login")
 def login_for_access_token(form_data: UserLogin = Body(...), db: Session = Depends(get_db)):
@@ -127,26 +127,22 @@ def login_for_access_token(form_data: UserLogin = Body(...), db: Session = Depen
 
 @user_router.post("/token/refresh")
 def refresh_token_endpoint(refresh_token_data: UserRefreshToken = Body(...), db: Session = Depends(get_db)):
-    refresh_token = refresh_token_data.refresh_token
     try:
-        payload = decode_token(refresh_token)
+        payload = decode_token(refresh_token_data.refresh_token)
         username = payload.get("sub")
         if not username:
             raise credentials_exception
-        
         user = get_user(db, username=username)
-        if not user or user.refresh_token != refresh_token:
+        if not user or user.refresh_token != refresh_token_data.refresh_token:
             raise credentials_exception
         
         new_access_token = create_access_token(data={"sub": username})
-        
-        return {"access_token": new_access_token, "token_type": "bearer"}
     except jwt.JWTError:
         raise credentials_exception
+    return {"access_token": new_access_token, "token_type": "bearer"}
 
 @user_router.get("/me")
 def get_my_details(current_user: User = Depends(get_current_user)):
-    # Return user details. Modify as needed.
     return {
         "userUUID": str(current_user.id),
         "organizationId": str(current_user.organization_id)
