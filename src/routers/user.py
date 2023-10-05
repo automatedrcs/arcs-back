@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Header
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from database.database import get_db
-from database.schema import User, UserCreate
+from database.schema import User, UserCreate, Organization
 from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
@@ -91,12 +91,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 user_router = APIRouter()
 
 @user_router.post("/signup/")
-def signup(username: str, password: str, email: str, organization_id: int, db: Session = Depends(get_db)):
-    if get_user(db, organization_id, username=username):
+def signup(username: str, password: str, email: str, organization_email: str, db: Session = Depends(get_db)):  # <-- Add organization_email parameter
+    if get_user(db, username=username):
         raise HTTPException(status_code=400, detail="Username already registered")
-    
+
+    # Retrieve the organization_id using the provided organization_email
+    organization = db.query(Organization).filter(Organization.data["email"].astext == organization_email).first()  # Using Postgres JSON querying
+    if not organization:
+        raise HTTPException(status_code=400, detail="Organization not found")
+
     hashed_password = hash_password(password)
-    create_user(db, UserCreate(username=username, password=hashed_password, email=email), organization_id)
+    create_user(db, UserCreate(username=username, password=hashed_password, email=email), organization.id)  # Use the retrieved organization's id
     
     return {"message": "User created successfully"}
 
