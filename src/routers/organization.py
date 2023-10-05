@@ -3,44 +3,45 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database.schema import OrganizationCreate, Organization, OrganizationUpdate
+from database.models import Organization as OrganizationModel
 
 # CRUD Functions
 
 def create_organization(db: Session, org: OrganizationCreate) -> Organization:
-    db_org = Organization(**org.dict())
+    db_org = OrganizationModel(**org.dict())
     db.add(db_org)
     db.commit()
     db.refresh(db_org)
-    return db_org
+    return Organization.from_orm(db_org)
 
-def get_organizations(
-    db: Session, 
-    organization_id: Optional[int] = None,
-    skip: int = 0, 
-    limit: int = 10
-) -> Union[Organization, List[Organization]]:
-    query = db.query(Organization)
+def get_organizations(db: Session, organization_id: Optional[int] = None, skip: int = 0, limit: int = 10) -> Union[Organization, List[Organization]]:
+    query = db.query(OrganizationModel)
 
     if organization_id:
-        return query.filter(Organization.id == organization_id).first()
+        db_org = query.filter(OrganizationModel.id == organization_id).first()
+        if db_org:
+            return Organization.from_orm(db_org)
+        return None
 
-    return query.offset(skip).limit(limit).all()
+    return [Organization.from_orm(org) for org in query.offset(skip).limit(limit).all()]
 
 def update_organization(db: Session, organization_id: int, org: OrganizationCreate) -> Organization:
-    db_org = db.query(Organization).filter(Organization.id == organization_id).first()
+    db_org = db.query(OrganizationModel).filter(OrganizationModel.id == organization_id).first()
     if db_org:
         for key, value in org.dict().items():
             setattr(db_org, key, value)
         db.commit()
         db.refresh(db_org)
-    return db_org
+        return Organization.from_orm(db_org)
+    return None
 
 def delete_organization(db: Session, organization_id: int) -> Organization:
-    db_org = db.query(Organization).filter(Organization.id == organization_id).first()
+    db_org = db.query(OrganizationModel).filter(OrganizationModel.id == organization_id).first()
     if db_org:
         db.delete(db_org)
         db.commit()
-    return db_org
+        return Organization.from_orm(db_org)
+    return None
 
 # Router Endpoints
 
