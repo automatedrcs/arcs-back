@@ -1,16 +1,14 @@
-#todo: import schema to clean up imports, implement async
-
-from fastapi import APIRouter, HTTPException, status, Depends, Header, Body
+from fastapi import APIRouter, HTTPException, status, Depends, Body
 from fastapi.security import OAuth2PasswordBearer
-from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from database.database import get_db
-from database.schema import User, UserCreate, Organization, UserLogin, UserRefreshToken
-from typing import Optional
-from uuid import UUID
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta 
 import jwt
 import bcrypt
+
+from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from database.database import get_db
+from database.models import User, Organization
+from database.schema import UserCreate, UserLogin, UserRefreshToken
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
