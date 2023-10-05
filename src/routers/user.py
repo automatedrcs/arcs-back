@@ -42,7 +42,6 @@ def decode_token(token: str):
 
 # CRUD Operations
 
-
 def create_user(db: Session, user: UserCreate, organization_id: int):
     hashed_password = hash_password(user.password)
     db_user = User(organization_id=organization_id, username=user.username, password=hashed_password, email=user.email)
@@ -51,7 +50,11 @@ def create_user(db: Session, user: UserCreate, organization_id: int):
     db.refresh(db_user)
     return db_user
 
+
 def get_user(db: Session, organization_id: Optional[int] = None, username: Optional[str] = None, user_id: Optional[UUID] = None):
+    if not any([organization_id, username, user_id]):
+        raise ValueError("Must provide at least one filter criteria for get_user")
+    
     query = db.query(User)
     if organization_id:
         query = query.filter(User.organization_id == organization_id)
@@ -60,6 +63,7 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
     if user_id:
         query = query.filter(User.id == user_id)
     return query.first()
+
 
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str):
     db_user = db.query(User).filter(User.username == username).first()
@@ -103,16 +107,12 @@ user_router = APIRouter()
 def signup(user_data: UserCreate = Body(...), db: Session = Depends(get_db)):
     if get_user(db, username=user_data.username):
         raise HTTPException(status_code=400, detail="Username already registered")
-
     organization = db.query(Organization).filter(Organization.data["email"].astext == user_data.organization_email).first()
-
     if not organization:
         raise HTTPException(status_code=400, detail="Organization not found")
-
-    hashed_password = hash_password(user_data.password)
-    create_user(db, UserCreate(username=user_data.username, password=hashed_password, email=user_data.email), organization.id)
-
+    create_user(db, user_data, organization.id)
     return {"message": "User created successfully"}
+
 
 @user_router.post("/login")
 def login_for_access_token(form_data: UserLogin = Body(...), db: Session = Depends(get_db)):
