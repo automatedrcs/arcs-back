@@ -2,8 +2,7 @@ from typing import List, Union, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
-from database.database import get_db
-from database import schema, models
+from database import schema, models, database
 
 # ------------------------- CRUD Operations -------------------------
 
@@ -60,7 +59,7 @@ def delete_notification(db: Session, notification_id: UUID) -> bool:
 notification_router = APIRouter()
 
 @notification_router.post("", response_model=schema.Notification)
-def create_notification_endpoint(notification: schema.NotificationCreate, db: Session = Depends(get_db)) -> models.Notification:
+def create_notification_endpoint(notification: schema.NotificationCreate, db: Session = Depends(database.get_db)) -> models.Notification:
     return create_notification(db=db, notification=notification)
 
 @notification_router.get("", response_model=List[schema.Notification])
@@ -71,19 +70,19 @@ def read_notifications(
         type: Optional[str] = None,
         skip: int = Query(0, ge=0),
         limit: int = Query(100, ge=0, le=500),
-        db: Session = Depends(get_db)
+        db: Session = Depends(database.get_db)
 ) -> List[models.Notification]:
     return get_notifications(db, organization_id, notification_id, user_id, skip, limit)
 
 @notification_router.put("/{notification_id}", response_model=schema.Notification)
-def update_notification_endpoint(notification_id: UUID, notification: schema.NotificationUpdate, db: Session = Depends(get_db)):
+def update_notification_endpoint(notification_id: UUID, notification: schema.NotificationUpdate, db: Session = Depends(database.get_db)):
     db_notification = update_notification(db, notification_id, notification)
     if db_notification is None:
         raise HTTPException(status_code=404, detail="Notification not found")
     return db_notification
 
 @notification_router.delete("/{notification_id}", response_model=schema.Notification)
-def delete_notification_endpoint(notification_id: UUID, db: Session = Depends(get_db)):
+def delete_notification_endpoint(notification_id: UUID, db: Session = Depends(database.get_db)):
     was_deleted = delete_notification(db, notification_id)
     if not was_deleted:
         raise HTTPException(status_code=404, detail="Notification not found")
