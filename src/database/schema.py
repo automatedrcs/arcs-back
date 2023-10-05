@@ -26,8 +26,18 @@ class UserBase(BaseModel):
     email: str
     name: Optional[str]
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
+    username: str
     password: str
+    email: str
+    organization_email: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class UserRefreshToken(BaseModel):
+    refresh_token: str
 
 class UserUpdate(UserBase):
     password: Optional[str]
