@@ -59,11 +59,11 @@ def delete_notification(db: Session, notification_id: UUID) -> bool:
 
 notification_router = APIRouter()
 
-@notification_router.post("/", response_model=schema.Notification)
+@notification_router.post("", response_model=schema.Notification)
 def create_notification_endpoint(notification: schema.NotificationCreate, db: Session = Depends(get_db)) -> models.Notification:
     return create_notification(db=db, notification=notification)
 
-@notification_router.get("/", response_model=List[schema.Notification])
+@notification_router.get("", response_model=List[schema.Notification])
 def read_notifications(
         organization_id: int,
         notification_id: Optional[UUID] = None,

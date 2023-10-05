@@ -45,11 +45,11 @@ def delete_meeting(db: Session, meeting_id: UUID) -> Optional[Meeting]:
 
 meeting_router = APIRouter()
 
-@meeting_router.post("/", response_model=Meeting)
+@meeting_router.post("", response_model=Meeting)
 def create_new_meeting(meeting: MeetingCreate, db: Session = Depends(get_db)):
     return create_meeting(db, meeting)
 
-@meeting_router.get("/", response_model=List[Meeting])
+@meeting_router.get("", response_model=List[Meeting])
 def read_meetings(organization_id: Optional[int] = None, user_id: Optional[UUID] = None, 
                 template_id: Optional[UUID] = None, job_id: Optional[UUID] = None, 
                 skip: int = Query(0, ge=0), limit: int = Query(10, le=100), db: Session = Depends(get_db)):

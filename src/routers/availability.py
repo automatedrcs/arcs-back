@@ -52,7 +52,7 @@ def delete_availability(db: Session, availability_id: UUID) -> Optional[Availabi
 # ------------------------- FastAPI Router Endpoints -------------------------
 availability_router = APIRouter()
 
-@availability_router.post("/", response_model=Availability)
+@availability_router.post("", response_model=Availability)
 def create_new_availability(availability: AvailabilityCreate, db: Session = Depends(get_db)) -> AvailabilityModel:
     return create_availability(db, availability)
 

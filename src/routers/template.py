@@ -50,11 +50,11 @@ def delete_template(db: Session, template_id: UUID) -> Optional[models.Template]
 
 template_router = APIRouter()
 
-@template_router.post("/", response_model=schema.Template)
+@template_router.post("", response_model=schema.Template)
 def create_new_template(template: schema.TemplateCreate, db: Session = Depends(database.get_db)) -> models.Template:
     return create_template(db, template)
 
-@template_router.get("/", response_model=List[schema.Template])
+@template_router.get("", response_model=List[schema.Template])
 def read_templates(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, le=100),

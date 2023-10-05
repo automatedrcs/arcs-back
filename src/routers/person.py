@@ -60,7 +60,7 @@ def delete_person(db: Session, person_id: UUID) -> Optional[PersonModel]:
 
 person_router = APIRouter()
 
-@person_router.post("/", response_model=Person)
+@person_router.post("", response_model=Person)
 def create_new_person(person: PersonCreate, db: Session = Depends(get_db)) -> PersonModel:
     return create_person(db, person)
 

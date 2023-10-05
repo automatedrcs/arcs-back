@@ -47,11 +47,11 @@ def delete_organization(db: Session, organization_id: int) -> Organization:
 
 organization_router = APIRouter()
 
-@organization_router.post("/", response_model=Organization)
+@organization_router.post("", response_model=Organization)
 def create_new_organization(org: OrganizationCreate, db: Session = Depends(get_db)):
     return create_organization(db, org)
 
-@organization_router.get("/", response_model=List[Organization])
+@organization_router.get("", response_model=List[Organization])
 def read_all_organizations(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return get_organizations(db, skip=skip, limit=limit)
 

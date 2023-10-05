@@ -42,11 +42,11 @@ def delete_job(db: Session, job_id: UUID) -> Optional[models.Job]:
 
 job_router = APIRouter()
 
-@job_router.post("/", response_model=schema.Job)
+@job_router.post("", response_model=schema.Job)
 def create_new_job(job: schema.JobCreate, db: Session = Depends(database.get_db)) -> models.Job:
     return create_job(db, job)
 
-@job_router.get("/", response_model=List[schema.Job])
+@job_router.get("", response_model=List[schema.Job])
 def read_jobs(
     skip: int = Query(0, ge=0),  # Validate that skip is >= 0
     limit: int = Query(10, le=100),  # Validate that limit is <= 100 and reasonable
