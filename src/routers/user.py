@@ -90,7 +90,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 user_router = APIRouter()
 
-@user_router.post("/signup/")
+@user_router.post("/signup")
 def signup(username: str, password: str, email: str, organization_email: str, db: Session = Depends(get_db)):  # <-- Add organization_email parameter
     if get_user(db, username=username):
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -105,7 +105,7 @@ def signup(username: str, password: str, email: str, organization_email: str, db
     
     return {"message": "User created successfully"}
 
-@user_router.post("/login/")
+@user_router.post("/login")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = get_user(db, username=form_data.username)
     if not user or not verify_password(form_data.password, user.password):
@@ -117,7 +117,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
-@user_router.post("/token/refresh/")
+@user_router.post("/token/refresh")
 def refresh_token_endpoint(refresh_token: str = Header(...), db: Session = Depends(get_db)):
     try:
         payload = decode_token(refresh_token)
@@ -135,7 +135,7 @@ def refresh_token_endpoint(refresh_token: str = Header(...), db: Session = Depen
     except jwt.JWTError:
         raise credentials_exception
 
-@user_router.get("/me/")
+@user_router.get("/me")
 def get_my_details(current_user: User = Depends(get_current_user)):
     # Return user details. Modify as needed.
     return {
