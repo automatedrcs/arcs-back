@@ -10,7 +10,7 @@ class OrganizationBase(BaseModel):
     data: Dict[str, Any]
 
 class OrganizationCreate(OrganizationBase):
-    description: Optional[str]
+    pass
 
 class OrganizationUpdate(OrganizationBase):
     pass
