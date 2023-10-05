@@ -42,8 +42,10 @@ def decode_token(token: str):
 
 # CRUD Operations
 
+
 def create_user(db: Session, user: UserCreate, organization_id: int):
-    db_user = User(organization_id=organization_id, **user.dict())
+    hashed_password = hash_password(user.password)
+    db_user = User(organization_id=organization_id, username=user.username, password=hashed_password, email=user.email)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -51,23 +53,25 @@ def create_user(db: Session, user: UserCreate, organization_id: int):
 
 def get_user(db: Session, organization_id: Optional[int] = None, username: Optional[str] = None, user_id: Optional[UUID] = None):
     query = db.query(User)
-    
     if organization_id:
         query = query.filter(User.organization_id == organization_id)
-    
     if username:
-        return query.filter(User.username == username).first()
-    
+        query = query.filter(User.username == username)
     if user_id:
-        return query.filter(User.id == user_id).first()
+        query = query.filter(User.id == user_id)
+    return query.first()
 
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str):
     db_user = db.query(User).filter(User.username == username).first()
     if db_user:
         db_user.access_token = access_token
         db_user.refresh_token = refresh_token
-        db.commit()
-        db.refresh(db_user)
+        try:
+            db.commit()
+            db.refresh(db_user)
+        except:
+            db.rollback()
+            raise
     return db_user
 
 def delete_user(db: Session, user_id: UUID):
@@ -79,7 +83,10 @@ def delete_user(db: Session, user_id: UUID):
     return None
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    payload = decode_token(token)
+    try:
+        payload = decode_token(token)
+    except jwt.JWTError:
+        raise credentials_exception
     username = payload.get("sub")
     if not username:
         raise credentials_exception
