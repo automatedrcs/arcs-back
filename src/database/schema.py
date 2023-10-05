@@ -9,16 +9,14 @@ class OrganizationBase(BaseModel):
     name: str
     data: Dict[str, Any]
 
-class OrganizationCreate(BaseModel):
-    id: Optional[int]
-    name: str
+class OrganizationCreate(OrganizationBase):
     description: Optional[str]
 
 class OrganizationUpdate(OrganizationBase):
     pass
 
 class Organization(OrganizationBase):
-    id: int
+    id: Optional[int]
 
     class Config:
         orm_mode = True
