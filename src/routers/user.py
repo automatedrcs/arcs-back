@@ -51,13 +51,22 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
         raise ValueError("Must provide at least one filter criteria for get_user")
     
     query = db.query(models.User)
+    
+    if user_id:
+        return query.filter(models.User.id == user_id).first()
+
     if organization_id:
         query = query.filter(models.User.organization_id == organization_id)
+
     if username:
-        query = query.filter(models.User.username == username)
-    if user_id:
-        query = query.filter(models.User.id == user_id)
+        user_by_username = query.filter(models.User.username == username).first()
+        if user_by_username:
+            return user_by_username
+        # If user is not found by username, check for email
+        return query.filter(models.User.email == username).first()
+        
     return query.first()
+
 
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> models.User:
     db_user = db.query(models.User).filter(models.User.username == username).first()
