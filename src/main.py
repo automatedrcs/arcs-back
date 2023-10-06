@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import ORIGINS
-
 from routers.authentication import authentication_router
 from routers.organization import organization_router
 from routers.user import user_router
@@ -13,6 +12,7 @@ from routers.template import template_router
 from routers.meeting import meeting_router
 from routers.test import test_router
 from routers.scheduler import scheduler_router
+from routers.calendar import calendar_router
 
 app = FastAPI()
 
@@ -37,3 +37,4 @@ app.include_router(template_router, prefix="/template", tags=["Template"])
 app.include_router(meeting_router, prefix="/meeting", tags=["Meeting"])
 app.include_router(test_router, prefix="/test", tags=["Test"])
 app.include_router(scheduler_router, prefix="/scheduler", tags=["Automation", "Scheduler"])
+app.include_router(calendar_router, prefix="/calendar", tags=["Calendar"])

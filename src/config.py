@@ -40,5 +40,7 @@ oauth.register(
     authorize_url='https://accounts.google.com/o/oauth2/auth',
     access_token_url='https://accounts.google.com/o/oauth2/token',
     redirect_uri=get_secret("REDIRECT_URL"),
-    client_kwargs={'scope': 'openid profile email'},
+    client_kwargs={
+        'scope': 'openid profile email https://www.googleapis.com/auth/calendar'
+    },
 )
