@@ -8,6 +8,7 @@ from typing import Optional
 from uuid import UUID
 from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from database import models, schema, database
+import logging
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/token")
 
@@ -71,7 +72,10 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> models.User:
     db_user = db.query(models.User).filter(models.User.username == username).first()
     if not db_user:
-        raise ValueError("User not found")
+        logging.info(f"Attempted login with username: {username}, but user was not found.")
+
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
 
     db_user.access_token = access_token
     db_user.refresh_token = refresh_token

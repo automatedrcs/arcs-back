@@ -21,6 +21,7 @@ def update_person_data_by_email(db: Session, email: str, data: dict) -> schema.P
 def handle_user_oauth_data(db: Session, user: dict, token: dict):
     if 'refresh_token' in token:
         encrypted_refresh_token = encrypt(token['refresh_token'])
+        # Let's change update person data by email to handle usernames as well
         update_person_data_by_email(db, user["email"], {"refresh_token": encrypted_refresh_token})
 
 # ------------------------- FastAPI Router Endpoints -------------------------
