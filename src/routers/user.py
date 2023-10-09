@@ -76,7 +76,6 @@ def update_user_tokens(db: Session, username: str, access_token: str, refresh_to
 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-
     db_user.access_token = access_token
     db_user.refresh_token = refresh_token
 

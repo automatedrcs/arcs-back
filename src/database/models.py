@@ -36,6 +36,8 @@ class User(Base):
     name = Column(String, nullable=True)
     permission = Column(String, default="user")
 
+    data = Column(JSONB)
+
     _access_token = Column("access_token", String, nullable=True)  # Raw encrypted token
     _refresh_token = Column("refresh_token", String, nullable=True)  # Raw encrypted token
 
