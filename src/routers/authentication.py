@@ -50,6 +50,7 @@ authentication_router = APIRouter()
 @authentication_router.get('/google/login')
 async def login(request: Request):
     redirect_uri = request.url_for('auth')
+    print("Generated Redirect URI:", redirect_uri)
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @authentication_router.get('/google/callback', name="auth")
