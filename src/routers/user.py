@@ -99,7 +99,10 @@ def delete_user(db: Session, user_id: UUID) -> Optional[models.User]:
         return db_user
     return None
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)) -> models.User:
+def get_current_user(request: Request, db: Session = Depends(database.get_db)) -> models.User:
+    token = request.cookies.get("access_token")
+    if not token:
+        raise credentials_exception
     try:
         payload = decode_token(token)
         username = payload.get("sub")
@@ -136,9 +139,9 @@ def login_for_access_token(response: Response, form_data: schema.UserLogin = Bod
     update_user_tokens(db, form_data.username, access_token, refresh_token)
     
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60) # 30 days
+    response.set_cookie(key="access_token", value=access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60)  # Setting the access token as an http-only cookie
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
+        "message": "Logged in successfully",
         "userUUID": str(user.id),          # return user's id
         "organizationId": user.organization_id  # return user's organization_id
     }
