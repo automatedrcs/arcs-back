@@ -6,6 +6,12 @@ from sqlalchemy import pool
 from alembic import context
 
 import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
+import sys
 sys.path.append("/app/src")
 from database.models import Base
 from config import DATABASE_URL

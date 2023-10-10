@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Body
+from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta 
@@ -123,7 +123,7 @@ def signup(user_data: schema.UserCreate = Body(...), db: Session = Depends(datab
     return {"message": "User created successfully"}
 
 @user_router.post("/login")
-def login_for_access_token(form_data: schema.UserLogin = Body(...), db: Session = Depends(database.get_db)):
+def login_for_access_token(response: Response, form_data: schema.UserLogin = Body(...), db: Session = Depends(database.get_db)):
     user = get_user(db, username=form_data.username)
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
@@ -132,7 +132,8 @@ def login_for_access_token(form_data: schema.UserLogin = Body(...), db: Session 
     refresh_token = create_refresh_token(data={"sub": form_data.username})
     update_user_tokens(db, form_data.username, access_token, refresh_token)
     
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60) # 30 days
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @user_router.post("/token")
 def login_for_token(form_data: schema.UserLogin = Body(...), db: Session = Depends(database.get_db)):
@@ -148,7 +149,12 @@ def login_for_token(form_data: schema.UserLogin = Body(...), db: Session = Depen
     return {"access_token": access_token, "token_type": "bearer"}
 
 @user_router.post("/token/refresh")
-def refresh_token_endpoint(refresh_token_data: schema.UserRefreshToken = Body(...), db: Session = Depends(database.get_db)):
+def refresh_token_endpoint(request: Request, db: Session = Depends(database.get_db)):
+    refresh_token_data = request.cookies.get("refresh_token")
+
+    if not refresh_token_data:
+        raise HTTPException(status_code=400, detail="Refresh token not provided.")
+    
     try:
         payload = decode_token(refresh_token_data.refresh_token)
         username = payload.get("sub")
