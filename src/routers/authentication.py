@@ -18,11 +18,27 @@ def update_person_data_by_email(db: Session, email: str, data: dict) -> schema.P
     db.refresh(person)
     return person
 
+
 def handle_user_oauth_data(db: Session, user: dict, token: dict):
-    if 'refresh_token' in token:
-        encrypted_refresh_token = encrypt(token['refresh_token'])
-        # Let's change update person data by email to handle usernames as well
-        update_person_data_by_email(db, user["email"], {"refresh_token": encrypted_refresh_token})
+    google_data = {
+        "access_token": token.get('access_token'),
+        "id_token": token.get('id_token'),
+        "refresh_token": token.get('refresh_token') if 'refresh_token' in token else None
+    }
+
+    user_db = db.query(schema.User).filter(schema.User.email == user["email"]).first()
+    
+    if not user_db:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Save Google Calendar data to user's data field
+    if user_db.data is None:
+        user_db.data = {}
+    if "authentication" not in user_db.data:
+        user_db.data["authentication"] = {}
+    user_db.data["authentication"]["google"] = google_data
+
+    db.commit()
 
 # ------------------------- FastAPI Router Endpoints -------------------------
 
@@ -33,7 +49,7 @@ async def login(request: Request):
     redirect_uri = request.url_for('auth')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@authentication_router.get('/google/callback')
+@authentication_router.get('/google/callback', name="auth")
 def auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         token = oauth.google.authorize_access_token(request)

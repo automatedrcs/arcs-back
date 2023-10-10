@@ -1,3 +1,6 @@
+# routers/user.py
+# prefix "/user"
+
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Response, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -181,6 +184,29 @@ def get_my_details(current_user: models.User = Depends(get_current_user)):
         "organizationId": str(current_user.organization_id)
     }
 
+@user_router.get("/google-access-token")
+def get_google_access_token(current_user: models.User = Depends(get_current_user)):
+    """
+    Retrieve the Google access token for the current authenticated user.
+    """
+    # Check if the data field is None or if the googleAccessToken does not exist
+    if not current_user.data or "googleAccessToken" not in current_user.data:
+        raise HTTPException(status_code=404, detail="Google access token not found")
+
+    google_access_token = current_user.data.get("googleAccessToken")
+    
+    # In reality, Google access tokens often expire after 1 hour. 
+    # Depending on your setup, you might want to check the token's validity or expiration.
+    # Here we're simply suggesting a potential action on the client-side.
+    expiration_message = {
+        "message": "Google access token might be expired. Please consider reconnecting your Google account on the client-side."
+    }
+    
+    return {
+        "googleAccessToken": google_access_token,
+        "warning": expiration_message
+    }
+
 @user_router.delete("/user/{user_id}")
 def delete_user_endpoint(user_id: UUID, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
     """
@@ -195,3 +221,4 @@ def delete_user_endpoint(user_id: UUID, db: Session = Depends(database.get_db), 
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"message": "User deleted successfully"}
+

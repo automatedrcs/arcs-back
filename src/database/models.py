@@ -1,3 +1,5 @@
+# database/models.py
+
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
