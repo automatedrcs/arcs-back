@@ -20,3 +20,4 @@ bcrypt
 psycopg2
 # psycopg2-binary
 uuid
+starlette

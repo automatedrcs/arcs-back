@@ -1,6 +1,8 @@
+# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import ORIGINS
+from config import ORIGINS, SESSION_MIDDLEWARE_KEY
+from starlette.middleware.sessions import SessionMiddleware
 from routers.authentication import authentication_router
 from routers.organization import organization_router
 from routers.user import user_router
@@ -23,6 +25,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add Session Middleware
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=SESSION_MIDDLEWARE_KEY, 
+    max_age=3600  # 1 hour, can be adjusted as per your requirement
 )
 
 # Routers

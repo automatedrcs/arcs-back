@@ -1,9 +1,11 @@
+# config.py
 # This will hold the configurations for your application
 from utils import get_secret
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
 
+# Database constants
 DB_USERNAME = get_secret("DB_USERNAME")
 DB_PASSWORD = get_secret("DB_PASSWORD")
 CLOUD_SQL_CONNECTION_NAME = get_secret("CLOUD_SQL_CONNECTION_NAME")
@@ -44,3 +46,6 @@ oauth.register(
         'scope': 'openid profile email https://www.googleapis.com/auth/calendar'
     },
 )
+
+# Session Middleware
+SESSION_MIDDLEWARE_KEY = get_secret("SESSION_MIDDLEWARE_KEY")
