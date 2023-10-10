@@ -133,7 +133,12 @@ def login_for_access_token(response: Response, form_data: schema.UserLogin = Bod
     update_user_tokens(db, form_data.username, access_token, refresh_token)
     
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60) # 30 days
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "userUUID": str(user.id),          # return user's id
+        "organizationId": user.organization_id  # return user's organization_id
+    }
 
 @user_router.post("/token")
 def login_for_token(form_data: schema.UserLogin = Body(...), db: Session = Depends(database.get_db)):
