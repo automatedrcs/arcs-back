@@ -18,6 +18,13 @@ from routers.calendar import calendar_router
 
 app = FastAPI(trust_proxy_headers=True)
 
+# Add Session Middleware
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=SESSION_MIDDLEWARE_KEY, 
+    max_age=3600  # 1 hour, can be adjusted as per your requirement
+)
+
 # Add CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
@@ -25,13 +32,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-# Add Session Middleware
-app.add_middleware(
-    SessionMiddleware, 
-    secret_key=SESSION_MIDDLEWARE_KEY, 
-    max_age=3600  # 1 hour, can be adjusted as per your requirement
 )
 
 # Routers
