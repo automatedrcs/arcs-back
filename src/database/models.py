@@ -87,7 +87,6 @@ class Person(Base):
     user = relationship("User", back_populates="people")
     availabilities = relationship("Availability", back_populates="person")
     
-
     email = Column(String)
     name = Column(String)
     role = Column(String)

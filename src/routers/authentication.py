@@ -3,69 +3,78 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from database import database, schema
+from database import database, schema, models
 from utils import get_secret, encrypt
 from config import oauth
 
 # ------------------------- CRUD Operations -------------------------
 
-def update_person_data_by_email(db: Session, email: str, data: dict) -> schema.Person:
-    person = db.query(schema.Person).filter(schema.Person.email == email).first()
-    if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
+def update_data_by_email(db: Session, email: str, data: dict, model: any) -> any:
+    instance = db.query(model).filter(model.email == email).first()
+    if not instance:
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
 
     for key, value in data.items():
-        setattr(person, key, value)
+        setattr(instance, key, value)
 
     db.commit()
-    db.refresh(person)
-    return person
+    db.refresh(instance)
+    return instance
 
-def handle_user_oauth_data(db: Session, user: dict, token: dict):
+def handle_oauth_data(db: Session, user: dict, token: dict, model: any):
     google_data = {
-        "access_token": encrypt(token.get('access_token')),
-        "id_token": encrypt(token.get('id_token')),
+        "refresh_token": encrypt(token.get('refresh_token', ''))
     }
-    
-    if 'refresh_token' in token:
-        google_data["refresh_token"] = encrypt(token.get('refresh_token'))
 
-    user_db = db.query(schema.User).filter(schema.User.email == user["email"]).first()
+    instance = db.query(model).filter(model.email == user["email"]).first()
     
-    if not user_db:
-        raise HTTPException(status_code=404, detail="User not found")
+    if not instance:
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
 
-    # Save Google Calendar data to user's data field
-    if user_db.data is None:
-        user_db.data = {}
-    if "authentication" not in user_db.data:
-        user_db.data["authentication"] = {}
-    user_db.data["authentication"]["google"] = google_data
+    if instance.data is None:
+        instance.data = {}
+    if "authentication" not in instance.data:
+        instance.data["authentication"] = {}
+    instance.data["authentication"]["google"] = google_data
 
     db.commit()
-
 
 # ------------------------- FastAPI Router Endpoints -------------------------
 
 authentication_router = APIRouter()
 
-@authentication_router.get('/google/login')
-async def login(request: Request):
+@authentication_router.get('/google/login/user')
+async def user_login(request: Request):
     BASE_URL = get_secret("BASE_URL")
-    redirect_uri = f"{BASE_URL}/authentication/google/callback"
+    redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@authentication_router.get('/google/callback', name="auth")
-async def auth(request: Request, db: Session = Depends(database.get_db)):
+@authentication_router.get('/google/login/person')
+async def person_login(request: Request):
+    BASE_URL = get_secret("BASE_URL")
+    redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@authentication_router.get('/google/callback/user', name="user_auth")
+async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     token = await oauth.google.authorize_access_token(request)
     
-    # To ensure the token includes id_token for OIDC
     if 'id_token' not in token:
         raise HTTPException(status_code=400, detail="Missing id_token")
     
     user_info = oauth.google.parse_id_token(request, token)
-
-    # Use the email in the user_info to fetch or create the user from your db.
-    handle_user_oauth_data(db, user_info, token)
+    handle_oauth_data(db, user_info, token, models.User)
 
     return {"token": token.get('access_token', ''), "user": user_info}
+
+@authentication_router.get('/google/callback/person', name="person_auth")
+async def person_auth(request: Request, db: Session = Depends(database.get_db)):
+    token = await oauth.google.authorize_access_token(request)
+    
+    if 'id_token' not in token:
+        raise HTTPException(status_code=400, detail="Missing id_token")
+    
+    user_info = oauth.google.parse_id_token(request, token)
+    handle_oauth_data(db, user_info, token, models.Person)
+
+    return {"user": user_info}
