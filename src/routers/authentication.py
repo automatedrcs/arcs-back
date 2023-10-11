@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from database import database, schema, models
 from utils import get_secret, encrypt
 from config import oauth
+import logging
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
 
 # ------------------------- CRUD Operations -------------------------
 
@@ -68,31 +72,48 @@ async def person_login(request: Request):
 async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
+        if not token:
+            logger.error("Token is not present")
+            raise HTTPException(status_code=400, detail="Token is missing")
+
         if 'id_token' not in token:
+            logger.error("ID Token is missing in the returned token")
             raise HTTPException(status_code=400, detail="Missing id_token")
         
         user_info = oauth.google.parse_id_token(request, token)
-        handle_oauth_data(db, user_info, token, models.User)
+        if not user_info:
+            logger.error("Failed to parse user info from ID Token")
+            raise HTTPException(status_code=400, detail="Failed to parse user info")
 
-        # Redirect to success page
+        handle_oauth_data(db, user_info, token, models.User)
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @authentication_router.get('/google/callback/person', name="person_auth")
 async def person_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
+        if not token:
+            logger.error("Token is not present")
+            raise HTTPException(status_code=400, detail="Token is missing")
+
         if 'id_token' not in token:
+            logger.error("ID Token is missing in the returned token")
             raise HTTPException(status_code=400, detail="Missing id_token")
         
         user_info = oauth.google.parse_id_token(request, token)
-        handle_oauth_data(db, user_info, token, models.Person)
+        if not user_info:
+            logger.error("Failed to parse user info from ID Token")
+            raise HTTPException(status_code=400, detail="Failed to parse user info")
 
-        # Redirect to success page
+        handle_oauth_data(db, user_info, token, models.Person)
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    
 
 @authentication_router.get('/success')
 async def success():
