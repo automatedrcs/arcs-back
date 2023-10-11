@@ -23,7 +23,6 @@ app.add_middleware(
     SessionMiddleware, 
     secret_key=SESSION_MIDDLEWARE_KEY, 
     max_age=86400,  # 1 hour, can be adjusted as per your requirement
-    samesite="lax"
 )
 
 # Add CORS middleware configuration
