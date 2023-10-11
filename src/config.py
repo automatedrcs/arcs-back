@@ -37,10 +37,9 @@ credentials_exception = HTTPException(
 oauth = OAuth()
 oauth.register(
     name='google',
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_id=get_secret("CLIENT_ID"),
     client_secret=get_secret("CLIENT_SECRET"),
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
     redirect_uri=get_secret("REDIRECT_URL"),
     client_kwargs={
         'scope': 'openid profile email https://www.googleapis.com/auth/calendar'
