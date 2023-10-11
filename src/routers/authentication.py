@@ -1,3 +1,5 @@
+# routers/authentication.py
+
 from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.orm import Session
 from database import database, schema, models
@@ -82,7 +84,7 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
             logger.error("ID Token is missing in the returned token")
             raise HTTPException(status_code=400, detail="Missing id_token")
         
-        user_info = oauth.google.parse_id_token(request, token)
+        user_info = await oauth.google.parse_id_token(request, token)
         logger.info(f"Received user_info: {user_info}")
 
         handle_user_oauth_data(db, user_info, token)
@@ -101,7 +103,7 @@ async def person_auth(request: Request, db: Session = Depends(database.get_db)):
         if 'id_token' not in token:
             raise HTTPException(status_code=400, detail="Missing id_token")
         
-        person_info = oauth.google.parse_id_token(request, token)
+        person_info = await oauth.google.parse_id_token(request, token)
         handle_person_oauth_data(db, person_info, token)
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
