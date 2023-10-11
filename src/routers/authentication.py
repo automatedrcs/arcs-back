@@ -8,44 +8,45 @@ import logging
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
-# ------------------------- CRUD Operations -------------------------
-
-def update_data_by_email(db: Session, email: str, data: dict, model: any) -> any:
-    try:
-        instance = db.query(model).filter(model.email == email).first()
-        if not instance:
-            raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
-
-        for key, value in data.items():
-            setattr(instance, key, value)
-
-        db.commit()
-        db.refresh(instance)
-        return instance
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def handle_oauth_data(db: Session, user: dict, token: dict, model: any):
+def handle_user_oauth_data(db: Session, user: dict, token: dict):
     try:
         google_data = {
             "refresh_token": encrypt(token.get('refresh_token', ''))
         }
 
-        instance = db.query(model).filter(model.email == user["email"]).first()
-        if not instance:
-            raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+        user_db = db.query(models.User).filter(models.User.email == user["email"]).first()
+        if not user_db:
+            raise HTTPException(status_code=404, detail="User not found")
 
-        if instance.data is None:
-            instance.data = {}
-        if "authentication" not in instance.data:
-            instance.data["authentication"] = {}
-        instance.data["authentication"]["google"] = google_data
+        if user_db.data is None:
+            user_db.data = {}
+        if "authentication" not in user_db.data:
+            user_db.data["authentication"] = {}
+        user_db.data["authentication"]["google"] = google_data
 
         db.commit()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ------------------------- FastAPI Router Endpoints -------------------------
+def handle_person_oauth_data(db: Session, person: dict, token: dict):
+    try:
+        google_data = {
+            "refresh_token": encrypt(token.get('refresh_token', ''))
+        }
+
+        person_db = db.query(models.Person).filter(models.Person.email == person["email"]).first()
+        if not person_db:
+            raise HTTPException(status_code=404, detail="Person not found")
+
+        if person_db.data is None:
+            person_db.data = {}
+        if "authentication" not in person_db.data:
+            person_db.data["authentication"] = {}
+        person_db.data["authentication"]["google"] = google_data
+
+        db.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 authentication_router = APIRouter()
 
@@ -67,57 +68,43 @@ async def person_login(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @authentication_router.get('/google/callback/user', name="user_auth")
 async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
-        logger.log("user auth callback")
+        logger.info("Initiating user_auth...")
+
         token = await oauth.google.authorize_access_token(request)
-        logger.log("token retrieved with oauth.google.authorize_access_token:" + str(token))
-        if not token:
-            logger.error("Token is not present")
-            raise HTTPException(status_code=400, detail="Token is missing")
+        logger.info(f"Received token: {token}")
 
         if 'id_token' not in token:
             logger.error("ID Token is missing in the returned token")
             raise HTTPException(status_code=400, detail="Missing id_token")
         
         user_info = oauth.google.parse_id_token(request, token)
-        logger.log("user_info: " + str(user_info))
-        if not user_info:
-            logger.error("Failed to parse user info from ID Token")
-            raise HTTPException(status_code=400, detail="Failed to parse user info")
+        logger.info(f"Received user_info: {user_info}")
 
-        handle_oauth_data(db, user_info, token, models.User)
-        logger.log("handle_oauth_data: " + str(handle_oauth_data))
+        handle_user_oauth_data(db, user_info, token)
+        logger.info("User OAuth data handled successfully.")
+
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
-        logger.error(f"Exception occurred: {str(e)}")
+        logger.error(f"Exception occurred in user_auth: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @authentication_router.get('/google/callback/person', name="person_auth")
 async def person_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
-        if not token:
-            logger.error("Token is not present")
-            raise HTTPException(status_code=400, detail="Token is missing")
-
         if 'id_token' not in token:
-            logger.error("ID Token is missing in the returned token")
             raise HTTPException(status_code=400, detail="Missing id_token")
         
-        user_info = oauth.google.parse_id_token(request, token)
-        if not user_info:
-            logger.error("Failed to parse user info from ID Token")
-            raise HTTPException(status_code=400, detail="Failed to parse user info")
-
-        handle_oauth_data(db, user_info, token, models.Person)
+        person_info = oauth.google.parse_id_token(request, token)
+        handle_person_oauth_data(db, person_info, token)
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
         logger.error(f"Exception occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 @authentication_router.get('/success')
 async def success():
