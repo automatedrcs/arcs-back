@@ -4,7 +4,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import database, schema
-from utils import encrypt
+from utils import get_secret
 from config import oauth
 
 # ------------------------- CRUD Operations -------------------------
@@ -49,8 +49,8 @@ authentication_router = APIRouter()
 
 @authentication_router.get('/google/login')
 async def login(request: Request):
-    redirect_uri = request.url_for('auth')
-    print("Generated Redirect URI:", redirect_uri)
+    BASE_URL = get_secret("BASE_URL")
+    redirect_uri = f"{BASE_URL}/authentication/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @authentication_router.get('/google/callback', name="auth")
