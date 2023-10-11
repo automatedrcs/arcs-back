@@ -54,12 +54,13 @@ async def login(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @authentication_router.get('/google/callback', name="auth")
-def auth(request: Request, db: Session = Depends(database.get_db)):
+async def auth(request: Request, db: Session = Depends(database.get_db)):
     try:
-        token = oauth.google.authorize_access_token(request)
+        token = await oauth.google.authorize_access_token(request)
         user = oauth.google.parse_id_token(request, token)
         handle_user_oauth_data(db, user, token)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"OAuth2 error: {e}")
 
     return {"token": token.get('access_token', ''), "user": user}
+
