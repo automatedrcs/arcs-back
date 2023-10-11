@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.orm import Session
 from database import database, schema, models
 from utils import get_secret, encrypt
@@ -63,6 +63,7 @@ async def person_login(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @authentication_router.get('/google/callback/user', name="user_auth")
 async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
@@ -73,7 +74,8 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
         user_info = oauth.google.parse_id_token(request, token)
         handle_oauth_data(db, user_info, token, models.User)
 
-        return {"token": token.get('access_token', ''), "user": user_info}
+        # Redirect to success page
+        return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -87,6 +89,28 @@ async def person_auth(request: Request, db: Session = Depends(database.get_db)):
         user_info = oauth.google.parse_id_token(request, token)
         handle_oauth_data(db, user_info, token, models.Person)
 
-        return {"user": user_info}
+        # Redirect to success page
+        return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@authentication_router.get('/success')
+async def success():
+    FRONT_URL = get_secret("FRONT_URL")
+    
+    content = f"""
+    <html>
+        <head>
+            <title>Authentication Successful</title>
+            <script>
+                setTimeout(function(){{
+                    window.location.href = "{FRONT_URL}";
+                }}, 2000);  // Redirects after 2 seconds
+            </script>
+        </head>
+        <body>
+            <h2>Authentication Successful! Redirecting...</h2>
+        </body>
+    </html>
+    """
+    return responses.HTMLResponse(content=content)
