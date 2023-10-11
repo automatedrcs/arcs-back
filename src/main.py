@@ -16,7 +16,7 @@ from routers.test import test_router
 from routers.scheduler import scheduler_router
 from routers.calendar import calendar_router
 
-app = FastAPI()
+app = FastAPI(trust_proxy_headers=True)
 
 # Add CORS middleware configuration
 app.add_middleware(
