@@ -12,6 +12,7 @@ from uuid import UUID
 from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from database import models, schema, database
 import logging
+from utils import encrypt, decrypt
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/token")
 
@@ -44,7 +45,7 @@ def decode_token(token: str) -> dict:
 # CRUD Operations
 def create_user(db: Session, user: schema.UserCreate, organization_id: int) -> models.User:
     hashed_password = hash_password(user.password)
-    db_user = models.User(organization_id=organization_id, username=user.username, password=hashed_password, email=user.email)
+    db_user = models.User(organization_id=organization_id, username=user.username, password=hashed_password, email=user.email) # Use hashed password directly
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -73,14 +74,17 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
 
 
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> models.User:
+    encrypted_access_token = encrypt(access_token)       # Encrypt token before storing
+    encrypted_refresh_token = encrypt(refresh_token)     # Encrypt token before storing
+
     db_user = db.query(models.User).filter(models.User.username == username).first()
     if not db_user:
         logging.info(f"Attempted login with username: {username}, but user was not found.")
 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    db_user.access_token = access_token
-    db_user.refresh_token = refresh_token
+    db_user.access_token = encrypted_access_token  # Storing encrypted token
+    db_user.refresh_token = encrypted_refresh_token  # Storing encrypted token
 
     try:
         db.commit()
@@ -100,11 +104,12 @@ def delete_user(db: Session, user_id: UUID) -> Optional[models.User]:
     return None
 
 def get_current_user(request: Request, db: Session = Depends(database.get_db)) -> models.User:
-    token = request.cookies.get("access_token")
-    if not token:
+    encrypted_token = request.cookies.get("access_token")
+    decrypted_token = decrypt(encrypted_token)   # Decrypt token after retrieving from client
+    if not decrypted_token:
         raise credentials_exception
     try:
-        payload = decode_token(token)
+        payload = decode_token(decrypted_token)  # Use decrypted_token here
         username = payload.get("sub")
         if not username:
             raise credentials_exception
@@ -131,19 +136,23 @@ def signup(user_data: schema.UserCreate = Body(...), db: Session = Depends(datab
 @user_router.post("/login")
 def login_for_access_token(response: Response, form_data: schema.UserLogin = Body(...), db: Session = Depends(database.get_db)):
     user = get_user(db, username=form_data.username)
-    if not user or not verify_password(form_data.password, user.password):
+    if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-    
+
+    if not verify_password(form_data.password, user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+
     access_token = create_access_token(data={"sub": form_data.username})
+    encrypted_access_token = encrypt(access_token)
     refresh_token = create_refresh_token(data={"sub": form_data.username})
-    update_user_tokens(db, form_data.username, access_token, refresh_token)
+    encrypted_refresh_token = encrypt(refresh_token)  # Encrypting the refresh token as well
     
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, max_age=30*24*60*60) # 30 days
-    response.set_cookie(key="access_token", value=access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60)  # Setting the access token as an http-only cookie
+    response.set_cookie(key="refresh_token", value=encrypted_refresh_token, httponly=True, max_age=30*24*60*60) # 30 days
+    response.set_cookie(key="access_token", value=encrypted_access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60)
     return {
         "message": "Logged in successfully",
-        "userUUID": str(user.id),          # return user's id
-        "organizationId": user.organization_id  # return user's organization_id
+        "userUUID": str(user.id),
+        "organizationId": user.organization_id
     }
 
 @user_router.post("/token")
@@ -161,18 +170,19 @@ def login_for_token(form_data: schema.UserLogin = Body(...), db: Session = Depen
 
 @user_router.post("/token/refresh")
 def refresh_token_endpoint(request: Request, db: Session = Depends(database.get_db)):
-    refresh_token_data = request.cookies.get("refresh_token")
-
-    if not refresh_token_data:
+    encrypted_refresh_token_data = request.cookies.get("refresh_token")
+    if not encrypted_refresh_token_data:
         raise HTTPException(status_code=400, detail="Refresh token not provided.")
-    
+
+    refresh_token_data = decrypt(encrypted_refresh_token_data)  # Decrypting the token
+
     try:
-        payload = decode_token(refresh_token_data.refresh_token)
+        payload = decode_token(refresh_token_data)
         username = payload.get("sub")
         if not username:
             raise credentials_exception
         user = get_user(db, username=username)
-        if not user or user.refresh_token != refresh_token_data.refresh_token:
+        if not user or user.refresh_token != encrypted_refresh_token_data:  # Checking against encrypted refresh token
             raise credentials_exception
         
         new_access_token = create_access_token(data={"sub": username})
@@ -196,7 +206,8 @@ def get_google_access_token(current_user: models.User = Depends(get_current_user
     if not current_user.data or "googleAccessToken" not in current_user.data:
         raise HTTPException(status_code=404, detail="Google access token not found")
 
-    google_access_token = current_user.data.get("googleAccessToken")
+    google_access_token_encrypted = current_user.data.get("googleAccessToken")
+    google_access_token = decrypt(google_access_token_encrypted)
     
     # In reality, Google access tokens often expire after 1 hour. 
     # Depending on your setup, you might want to check the token's validity or expiration.

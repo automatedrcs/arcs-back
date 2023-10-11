@@ -4,7 +4,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import database, schema
-from utils import get_secret
+from utils import get_secret, encrypt
 from config import oauth
 
 # ------------------------- CRUD Operations -------------------------
@@ -21,13 +21,14 @@ def update_person_data_by_email(db: Session, email: str, data: dict) -> schema.P
     db.refresh(person)
     return person
 
-
 def handle_user_oauth_data(db: Session, user: dict, token: dict):
     google_data = {
-        "access_token": token.get('access_token'),
-        "id_token": token.get('id_token'),
-        "refresh_token": token.get('refresh_token') if 'refresh_token' in token else None
+        "access_token": encrypt(token.get('access_token')),
+        "id_token": encrypt(token.get('id_token')),
     }
+    
+    if 'refresh_token' in token:
+        google_data["refresh_token"] = encrypt(token.get('refresh_token'))
 
     user_db = db.query(schema.User).filter(schema.User.email == user["email"]).first()
     
@@ -43,6 +44,7 @@ def handle_user_oauth_data(db: Session, user: dict, token: dict):
 
     db.commit()
 
+
 # ------------------------- FastAPI Router Endpoints -------------------------
 
 authentication_router = APIRouter()
@@ -55,12 +57,15 @@ async def login(request: Request):
 
 @authentication_router.get('/google/callback', name="auth")
 async def auth(request: Request, db: Session = Depends(database.get_db)):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-        user = oauth.google.parse_id_token(request, token)
-        handle_user_oauth_data(db, user, token)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth2 error: {e}")
+    token = await oauth.google.authorize_access_token(request)
+    
+    # To ensure the token includes id_token for OIDC
+    if 'id_token' not in token:
+        raise HTTPException(status_code=400, detail="Missing id_token")
+    
+    user_info = oauth.google.parse_id_token(request, token)
 
-    return {"token": token.get('access_token', ''), "user": user}
+    # Use the email in the user_info to fetch or create the user from your db.
+    handle_user_oauth_data(db, user_info, token)
 
+    return {"token": token.get('access_token', ''), "user": user_info}

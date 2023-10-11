@@ -34,17 +34,18 @@ credentials_exception = HTTPException(
     headers={"WWW-Authenticate": "Bearer"},
 )
 
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 oauth = OAuth()
-oauth.register(
-    name='google',
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_id=get_secret("CLIENT_ID"),
-    client_secret=get_secret("CLIENT_SECRET"),
-    redirect_uri=get_secret("REDIRECT_URL"),
+
+google = oauth.register(
+    name="google",
+    server_metadata_url=GOOGLE_DISCOVERY_URL,
     client_kwargs={
         'scope': 'openid profile email https://www.googleapis.com/auth/calendar'
     },
+    client_id=get_secret("CLIENT_ID"),
+    client_secret=get_secret("CLIENT_SECRET"),
+    redirect_uri=get_secret("REDIRECT_URL"),
 )
-
 # Session Middleware
 SESSION_MIDDLEWARE_KEY = get_secret("SESSION_MIDDLEWARE_KEY")
