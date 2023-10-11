@@ -8,7 +8,6 @@ from config import oauth
 import logging
 import traceback
 
-
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ async def person_login(request: Request):
         return await oauth.google.authorize_redirect(request, redirect_uri)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @authentication_router.get('/google/callback/user', name="user_auth")
 async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
@@ -80,36 +79,44 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
         token = await oauth.google.authorize_access_token(request)
         logger.info(f"Received token: {token}")
 
-        if 'id_token' not in token:
-            logger.error("ID Token is missing in the returned token")
-            raise HTTPException(status_code=400, detail="Missing id_token")
+        userinfo = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
         
-        user_info = await oauth.google.parse_id_token(request, token)
-        logger.info(f"Received user_info: {user_info}")
+        if "email" not in userinfo.json():
+            logger.error("Email not found in the userinfo response.")
+            raise HTTPException(status_code=400, detail="Email not found.")
+        
+        user_email = userinfo.json()["email"]
 
-        handle_user_oauth_data(db, user_info, token)
+        handle_user_oauth_data(db, {"email": user_email}, token)
         logger.info("User OAuth data handled successfully.")
 
         return responses.RedirectResponse(url='/authentication/success')
+    except HTTPException:
+        raise  # If it's already an HTTPException, just raise it directly.
     except Exception as e:
         logger.error(f"Exception occurred in user_auth. Type: {type(e).__name__}, Message: {str(e)}, Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @authentication_router.get('/google/callback/person', name="person_auth")
 async def person_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
-        if 'id_token' not in token:
-            raise HTTPException(status_code=400, detail="Missing id_token")
+
+        userinfo = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
         
-        person_info = await oauth.google.parse_id_token(request, token)
-        handle_person_oauth_data(db, person_info, token)
+        if "email" not in userinfo.json():
+            logger.error("Email not found in the userinfo response.")
+            raise HTTPException(status_code=400, detail="Email not found.")
+        
+        person_email = userinfo.json()["email"]
+
+        handle_person_oauth_data(db, {"email": person_email}, token)
         return responses.RedirectResponse(url='/authentication/success')
+    except HTTPException:
+        raise  # If it's already an HTTPException, just raise it directly.
     except Exception as e:
         logger.error(f"Exception occurred in person_auth. Type: {type(e).__name__}, Message: {str(e)}, Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @authentication_router.get('/success')
 async def success():
