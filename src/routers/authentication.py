@@ -71,7 +71,9 @@ async def person_login(request: Request):
 @authentication_router.get('/google/callback/user', name="user_auth")
 async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
+        logger.log("user auth callback")
         token = await oauth.google.authorize_access_token(request)
+        logger.log("token retrieved with oauth.google.authorize_access_token:" + str(token))
         if not token:
             logger.error("Token is not present")
             raise HTTPException(status_code=400, detail="Token is missing")
@@ -81,11 +83,13 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
             raise HTTPException(status_code=400, detail="Missing id_token")
         
         user_info = oauth.google.parse_id_token(request, token)
+        logger.log("user_info: " + str(user_info))
         if not user_info:
             logger.error("Failed to parse user info from ID Token")
             raise HTTPException(status_code=400, detail="Failed to parse user info")
 
         handle_oauth_data(db, user_info, token, models.User)
+        logger.log("handle_oauth_data: " + str(handle_oauth_data))
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
         logger.error(f"Exception occurred: {str(e)}")
