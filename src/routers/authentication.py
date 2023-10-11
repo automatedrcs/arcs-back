@@ -4,6 +4,8 @@ from database import database, schema, models
 from utils import get_secret, encrypt
 from config import oauth
 import logging
+import traceback
+
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -88,7 +90,7 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
 
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
-        logger.error(f"Exception occurred in user_auth: {str(e)}")
+        logger.error(f"Exception occurred in user_auth. Type: {type(e).__name__}, Message: {str(e)}, Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -103,8 +105,9 @@ async def person_auth(request: Request, db: Session = Depends(database.get_db)):
         handle_person_oauth_data(db, person_info, token)
         return responses.RedirectResponse(url='/authentication/success')
     except Exception as e:
-        logger.error(f"Exception occurred: {str(e)}")
+        logger.error(f"Exception occurred in person_auth. Type: {type(e).__name__}, Message: {str(e)}, Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @authentication_router.get('/success')
 async def success():
