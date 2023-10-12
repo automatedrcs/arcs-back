@@ -91,11 +91,11 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
         logger.info("User OAuth data handled successfully.")
 
         return responses.RedirectResponse(url='/authentication/success')
-    except HTTPException:
-        raise  # If it's already an HTTPException, just raise it directly.
+    except HTTPException as he:
+        return responses.RedirectResponse(url=f'/authentication/error?detail={he.detail}')
     except Exception as e:
         logger.error(f"Exception occurred in user_auth. Type: {type(e).__name__}, Message: {str(e)}, Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return responses.RedirectResponse(url=f'/authentication/error?detail={str(e)}')
 
 @authentication_router.get('/google/callback/person', name="person_auth")
 async def person_auth(request: Request, db: Session = Depends(database.get_db)):
@@ -112,11 +112,11 @@ async def person_auth(request: Request, db: Session = Depends(database.get_db)):
 
         handle_person_oauth_data(db, {"email": person_email}, token)
         return responses.RedirectResponse(url='/authentication/success')
-    except HTTPException:
-        raise  # If it's already an HTTPException, just raise it directly.
+    except HTTPException as he:
+        return responses.RedirectResponse(url=f'/authentication/error?detail={he.detail}')
     except Exception as e:
         logger.error(f"Exception occurred in person_auth. Type: {type(e).__name__}, Message: {str(e)}, Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return responses.RedirectResponse(url=f'/authentication/error?detail={str(e)}')
 
 @authentication_router.get('/success')
 async def success():
@@ -134,6 +134,27 @@ async def success():
         </head>
         <body>
             <h2>Authentication Successful! Redirecting...</h2>
+        </body>
+    </html>
+    """
+    return responses.HTMLResponse(content=content)
+
+@authentication_router.get('/error')
+async def error(detail: str):
+    FRONT_URL = get_secret("FRONT_URL")
+    
+    content = f"""
+    <html>
+        <head>
+            <title>Authentication Failed</title>
+            <script>
+                setTimeout(function(){{
+                    window.location.href = "{FRONT_URL}";
+                }}, 5000);  // Redirects after 5 seconds
+            </script>
+        </head>
+        <body>
+            <h2>Authentication Failed: {detail}. Redirecting...</h2>
         </body>
     </html>
     """
