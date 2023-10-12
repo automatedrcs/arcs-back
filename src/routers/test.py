@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from database import models, database
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from utils import decrypt, get_secret
 import requests
+from uuid import UUID
 
 test_router = APIRouter()
 
@@ -25,10 +26,17 @@ def refresh_google_token(refresh_token: str) -> dict:
     return r.json()
 
 @test_router.get("/api/connection-test")
-def test_connection(db: Session = Depends(database.get_db)):
+def test_connection(
+    user_uuid: UUID = Header(None),  # Add this line to get the user UUID from the header
+    db: Session = Depends(database.get_db)
+):
     try:
-        # Attempt to fetch the first row from the User table
-        user = db.query(models.User).order_by(models.User.id).first()
+        if not user_uuid:
+            raise HTTPException(status_code=400, detail="User UUID not provided in the request header.")
+        
+        # Fetch the user using the provided UUID
+        user = db.query(models.User).filter(models.User.id == user_uuid).first()
+
         
         if not user:
             return {"message": "Connection successful. No user found in the table.", "data": {}}
