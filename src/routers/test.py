@@ -27,7 +27,7 @@ def refresh_google_token(refresh_token: str) -> dict:
 
 @test_router.get("/api/connection-test")
 def test_connection(
-    user_uuid: UUID = Header(None),  # Add this line to get the user UUID from the header
+    user_uuid: UUID = Header(None),
     db: Session = Depends(database.get_db)
 ):
     try:
@@ -36,23 +36,19 @@ def test_connection(
         
         # Fetch the user using the provided UUID
         user = db.query(models.User).filter(models.User.id == user_uuid).first()
-
-        
         if not user:
             return {"message": "Connection successful. No user found in the table.", "data": {}}
-
+        
         if "authentication" not in user.data or "google" not in user.data["authentication"] or "refresh_token" not in user.data["authentication"]["google"]:
             return {"message": "Connection successful. No Google Refresh Token found for the user.", "data": {}}
-
+        
         refreshed_token = refresh_google_token(user.data["authentication"]["google"]["refresh_token"])
         if 'access_token' not in refreshed_token:
-            raise Exception(f"Failed to obtain access token. Response: {refreshed_token}")
-
+            raise Exception("Failed to obtain access token.")
+        
         access_token = refreshed_token['access_token']
-
         credentials = Credentials(token=access_token)
         service = build("calendar", "v3", credentials=credentials)
-
         events_result = service.events().list(calendarId='primary', timeMax='2100-01-01T00:00:00Z', maxResults=1, singleEvents=True, orderBy='startTime').execute()
         events = events_result.get('items', [])
 
@@ -63,8 +59,13 @@ def test_connection(
                 "refresh_token": user.data["authentication"]["google"]["refresh_token"]
             }
         }
-    except Exception as e:
-        # If there's an error related to database connection, API call, or query execution
-        print(f"Error in test_connection: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
+    except HTTPException as e:
+        print(f"HTTP Exception in test_connection: {str(e)}")
+        raise
+    except requests.RequestException as re:
+        print(f"Request Exception in test_connection: {str(re)}")
+        raise HTTPException(status_code=500, detail="Error while making an external request.")
+    except Exception as e:
+        print(f"Generic Exception in test_connection: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
