@@ -65,4 +65,6 @@ def test_connection(
         }
     except Exception as e:
         # If there's an error related to database connection, API call, or query execution
+        print(f"Error in test_connection: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
