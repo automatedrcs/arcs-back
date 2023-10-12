@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import models, database
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from utils import decrypt
+from utils import decrypt, get_secret
 import requests
 
 test_router = APIRouter()
