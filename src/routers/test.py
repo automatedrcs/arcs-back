@@ -20,6 +20,8 @@ def refresh_google_token(refresh_token: str) -> dict:
     }
 
     r = requests.post('https://oauth2.googleapis.com/token', data=data)
+    if r.status_code != 200:
+        raise Exception(f"Failed to refresh token. Google response: {r.json()}")
     return r.json()
 
 @test_router.get("/api/connection-test")
@@ -35,6 +37,9 @@ def test_connection(db: Session = Depends(database.get_db)):
             return {"message": "Connection successful. No Google Refresh Token found for the user.", "data": {}}
 
         refreshed_token = refresh_google_token(user.data["authentication"]["google"]["refresh_token"])
+        if 'access_token' not in refreshed_token:
+            raise Exception(f"Failed to obtain access token. Response: {refreshed_token}")
+
         access_token = refreshed_token['access_token']
 
         credentials = Credentials(token=access_token)
