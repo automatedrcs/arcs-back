@@ -1,3 +1,5 @@
+# routers/test.py
+
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from database import models, database
@@ -20,52 +22,39 @@ def refresh_google_token(refresh_token: str) -> dict:
         'grant_type': 'refresh_token'
     }
 
-    r = requests.post('https://oauth2.googleapis.com/token', data=data)
-    if r.status_code != 200:
-        raise Exception(f"Failed to refresh token. Google response: {r.json()}")
-    return r.json()
+    response = requests.post('https://oauth2.googleapis.com/token', data=data)
+    response.raise_for_status()
+
+    return response.json()
 
 @test_router.get("/api/connection-test")
 def test_connection(
-    user_uuid: UUID = Header(None),
+    user_uuid: UUID = Header(...),  # This ensures that user_uuid is a required header
     db: Session = Depends(database.get_db)
 ):
-    try:
-        if not user_uuid:
-            raise HTTPException(status_code=400, detail="User UUID not provided in the request header.")
-        
-        # Fetch the user using the provided UUID
-        user = db.query(models.User).filter(models.User.id == user_uuid).first()
-        if not user:
-            return {"message": "Connection successful. No user found in the table.", "data": {}}
-        
-        if "authentication" not in user.data or "google" not in user.data["authentication"] or "refresh_token" not in user.data["authentication"]["google"]:
-            return {"message": "Connection successful. No Google Refresh Token found for the user.", "data": {}}
-        
-        refreshed_token = refresh_google_token(user.data["authentication"]["google"]["refresh_token"])
-        if 'access_token' not in refreshed_token:
-            raise Exception("Failed to obtain access token.")
-        
-        access_token = refreshed_token['access_token']
-        credentials = Credentials(token=access_token)
-        service = build("calendar", "v3", credentials=credentials)
-        events_result = service.events().list(calendarId='primary', timeMax='2100-01-01T00:00:00Z', maxResults=1, singleEvents=True, orderBy='startTime').execute()
-        events = events_result.get('items', [])
+    # Fetch the user using the provided UUID
+    user = db.query(models.User).filter(models.User.id == user_uuid).first()
+    if not user:
+        return {"message": "Connection successful. No user found in the table.", "data": {}}
 
-        return {
-            "message": "Successful calendar connection. Data fetched successfully.",
-            "data": {
-                "first_event": events[0] if events else "No events found in the calendar.",
-                "refresh_token": user.data["authentication"]["google"]["refresh_token"]
-            }
+    google_auth = user.data.get("authentication", {}).get("google", {})
+    refresh_token = google_auth.get("refresh_token")
+    if not refresh_token:
+        return {"message": "Connection successful. No Google Refresh Token found for the user.", "data": {}}
+
+    refreshed_token = refresh_google_token(refresh_token)
+    if 'access_token' not in refreshed_token:
+        raise HTTPException(status_code=500, detail="Failed to obtain access token.")
+
+    credentials = Credentials(token=refreshed_token['access_token'])
+    service = build("calendar", "v3", credentials=credentials)
+    events_result = service.events().list(calendarId='primary', timeMax='2100-01-01T00:00:00Z', maxResults=1, singleEvents=True, orderBy='startTime').execute()
+    events = events_result.get('items', [])
+
+    return {
+        "message": "Successful calendar connection. Data fetched successfully.",
+        "data": {
+            "first_event": events[0] if events else "No events found in the calendar.",
+            "refresh_token": refresh_token
         }
-
-    except HTTPException as e:
-        print(f"HTTP Exception in test_connection: {str(e)}")
-        raise
-    except requests.RequestException as re:
-        print(f"Request Exception in test_connection: {str(re)}")
-        raise HTTPException(status_code=500, detail="Error while making an external request.")
-    except Exception as e:
-        print(f"Generic Exception in test_connection: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    }
