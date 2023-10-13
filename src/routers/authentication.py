@@ -129,7 +129,7 @@ async def success():
             <script>
                 setTimeout(function(){{
                     window.location.href = "{FRONT_URL}";
-                }}, 5000);  // Redirects after 2 seconds
+                }}, 4000);  // Redirects after 4 seconds
             </script>
         </head>
         <body>
@@ -150,7 +150,7 @@ async def error(detail: str):
             <script>
                 setTimeout(function(){{
                     window.location.href = "{FRONT_URL}";
-                }}, 5000);  // Redirects after 5 seconds
+                }}, 4000);  // Redirects after 4 seconds
             </script>
         </head>
         <body>

@@ -72,19 +72,14 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
         
     return query.first()
 
-
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> models.User:
-    encrypted_access_token = encrypt(access_token)       # Encrypt token before storing
-    encrypted_refresh_token = encrypt(refresh_token)     # Encrypt token before storing
-
     db_user = db.query(models.User).filter(models.User.username == username).first()
     if not db_user:
         logging.info(f"Attempted login with username: {username}, but user was not found.")
-
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    db_user.access_token = encrypted_access_token  # Storing encrypted token
-    db_user.refresh_token = encrypted_refresh_token  # Storing encrypted token
+    db_user.access_token = access_token  # Model will handle encryption
+    db_user.refresh_token = refresh_token  # Model will handle encryption
 
     try:
         db.commit()
@@ -182,7 +177,7 @@ def refresh_token_endpoint(request: Request, db: Session = Depends(database.get_
         if not username:
             raise credentials_exception
         user = get_user(db, username=username)
-        if not user or user.refresh_token != encrypted_refresh_token_data:  # Checking against encrypted refresh token
+        if not user or user.refresh_token != refresh_token_data:  # Checking against decrypted refresh token
             raise credentials_exception
         
         new_access_token = create_access_token(data={"sub": username})
