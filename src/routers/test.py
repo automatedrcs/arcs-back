@@ -23,6 +23,11 @@ def refresh_google_token(refresh_token: str) -> dict:
     }
 
     response = requests.post('https://oauth2.googleapis.com/token', data=data)
+
+    if response.status_code != 200:
+        # Log or print the detailed error message from Google
+        print("Error refreshing token:", response.text)
+
     response.raise_for_status()
 
     return response.json()
