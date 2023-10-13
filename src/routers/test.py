@@ -44,9 +44,14 @@ def test_connection(
 
     google_auth = user.data.get("authentication", {}).get("google", {})
     refresh_token = google_auth.get("refresh_token")
+    
     if not refresh_token:
         return {"message": "Connection successful. No Google Refresh Token found for the user.", "data": {}}
 
+    decrypted_refresh_token = decrypt(refresh_token)
+    if not decrypted_refresh_token:
+        raise HTTPException(status_code=500, detail="Decryption failed or provided an empty refresh token.")  
+    
     refreshed_token = refresh_google_token(refresh_token)
     if 'access_token' not in refreshed_token:
         raise HTTPException(status_code=500, detail="Failed to obtain access token.")

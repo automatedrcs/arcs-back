@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta 
 import jwt
 import bcrypt
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from database import models, schema, database
@@ -230,4 +230,3 @@ def delete_user_endpoint(user_id: UUID, db: Session = Depends(database.get_db), 
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"message": "User deleted successfully"}
-
