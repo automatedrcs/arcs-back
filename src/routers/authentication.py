@@ -84,7 +84,7 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         print("Initiating user_auth...")
 
-        token = await oauth.google.authorize_access_token(request)
+        token = await oauth.google.authorize_access_token(request, access_type="offline")
         print(f"Received token: {token}")
 
         userinfo = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
