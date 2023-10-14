@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.orm import Session
 from database import database, schema, models
-from utils import get_secret, encrypt
+from utils import get_secret, encrypt, decrypt
 from config import oauth
 import logging
 import traceback
@@ -13,8 +13,16 @@ logger = logging.getLogger(__name__)
 
 def handle_user_oauth_data(db: Session, user: dict, token: dict):
     try:
+        refresh_token = token.get('refresh_token')
+        print('Raw refresh token: ', refresh_token)
+        
+        encrypted_token = encrypt(refresh_token)
+        decrypted_token = decrypt(encrypted_token)
+
+        print("Encrypted:", encrypted_token)
+        print("Decrypted:", decrypted_token)
         google_data = {
-            "refresh_token": encrypt(token.get('refresh_token', ''))
+            "refresh_token": token.get('refresh_token', '')
         }
 
         user_db = db.query(models.User).filter(models.User.email == user["email"]).first()
