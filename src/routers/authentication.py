@@ -15,7 +15,7 @@ def handle_user_oauth_data(db: Session, user: dict, token: dict):
     try:
         refresh_token = token.get('refresh_token')
         print('Raw refresh token: ', refresh_token)
-        
+
         encrypted_token = encrypt(refresh_token)
         decrypted_token = decrypt(encrypted_token)
 
@@ -82,15 +82,16 @@ async def person_login(request: Request):
 @authentication_router.get('/google/callback/user', name="user_auth")
 async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
-        logger.info("Initiating user_auth...")
+        print("Initiating user_auth...")
 
         token = await oauth.google.authorize_access_token(request)
-        logger.info(f"Received token: {token}")
+        print(f"Received token: {token}")
 
         userinfo = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
-        
+        print("retrieved userinfo: ", str(userinfo))
         if "email" not in userinfo.json():
             logger.error("Email not found in the userinfo response.")
+            print("print statement: Email not found in the userinfo response")
             raise HTTPException(status_code=400, detail="Email not found.")
         
         user_email = userinfo.json()["email"]
