@@ -42,7 +42,8 @@ google = oauth.register(
     server_metadata_url=GOOGLE_DISCOVERY_URL,
     client_kwargs={
         'scope': 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email',
-        'access_type': 'offline'
+        'access_type': 'offline',
+        'prompt': 'consent'
     },
     client_id=get_secret("CLIENT_ID"),
     client_secret=get_secret("CLIENT_SECRET"),
