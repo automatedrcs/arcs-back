@@ -1,3 +1,7 @@
+# scripts/generate_interview.py
+# refer to git repo arcs-api/src/services/generateInterviewService.js
+# for simple algorithm implemented in javascript
+
 from typing import List, Dict, Any, Union
 from fastapi import HTTPException
 from datetime import timedelta
