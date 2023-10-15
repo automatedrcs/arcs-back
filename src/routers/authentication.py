@@ -66,7 +66,7 @@ async def user_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-        return await google_oauth.google.authorize_redirect(request, redirect_uri, access_type="offline")
+        return await google_oauth.authorize_redirect(request, redirect_uri, access_type="offline")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -75,7 +75,7 @@ async def person_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        return await google_oauth.google.authorize_redirect(request, redirect_uri, access_type="offline")
+        return await google_oauth.authorize_redirect(request, redirect_uri, access_type="offline")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
