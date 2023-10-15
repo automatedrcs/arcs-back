@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.orm import Session
 from database import database, schema, models
 from utils import get_secret, encrypt, decrypt
-from config import oauth
+from config import google_oauth
 import logging
 import traceback
 
@@ -66,7 +66,7 @@ async def user_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-        return await oauth.google.authorize_redirect(request, redirect_uri)
+        return await google_oauth.google.authorize_redirect(request, redirect_uri, access_type="offline")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -75,7 +75,7 @@ async def person_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        return await oauth.google.authorize_redirect(request, redirect_uri)
+        return await google_oauth.google.authorize_redirect(request, redirect_uri, access_type="offline")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -84,16 +84,31 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
         print("Initiating user_auth...")
 
-        token = await oauth.google.authorize_access_token(request, access_type="offline")
-        print(f"Received token: {token}")
+        # Exchange the authorization code for tokens using oauthlib
+        token_url, headers, body = google_oauth.prepare_token_request(
+            'https://accounts.google.com/o/oauth2/token',
+            authorization_response=request.url,
+            redirect_url=request.url)
+        token_response = await google_oauth.fetch_token(
+            token_url,
+            authorization_response=request.url,
+            headers=headers,
+            body=body,
+            include_client_id=True)  # Include client_id and client_secret
+        token = token_response
 
-        userinfo = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
+        # Check if the response includes a refresh token
+        refresh_token = token.get('refresh_token')
+        print("Received refresh token:", refresh_token)
+
+        userinfo = await google_oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
         print("retrieved userinfo: ", str(userinfo))
+
         if "email" not in userinfo.json():
             logger.error("Email not found in the userinfo response.")
             print("print statement: Email not found in the userinfo response")
             raise HTTPException(status_code=400, detail="Email not found.")
-        
+
         user_email = userinfo.json()["email"]
 
         handle_user_oauth_data(db, {"email": user_email}, token)
@@ -109,17 +124,32 @@ async def user_auth(request: Request, db: Session = Depends(database.get_db)):
 @authentication_router.get('/google/callback/person', name="person_auth")
 async def person_auth(request: Request, db: Session = Depends(database.get_db)):
     try:
-        token = await oauth.google.authorize_access_token(request)
+        print("Initiating person_auth...")
 
-        userinfo = await oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
-        
+        # Exchange the authorization code for tokens using oauthlib
+        token_url, headers, body = google_oauth.prepare_token_request(
+            'https://accounts.google.com/o/oauth2/token',
+            authorization_response=request.url,
+            redirect_url=request.url)
+        token_response = await google_oauth.fetch_token(
+            token_url,
+            authorization_response=request.url,
+            headers=headers,
+            body=body,
+            include_client_id=True)  # Include client_id and client_secret
+        token = token_response
+
+        userinfo = await google_oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
+
         if "email" not in userinfo.json():
             logger.error("Email not found in the userinfo response.")
             raise HTTPException(status_code=400, detail="Email not found.")
-        
+
         person_email = userinfo.json()["email"]
 
         handle_person_oauth_data(db, {"email": person_email}, token)
+        logger.info("Person OAuth data handled successfully.")
+
         return responses.RedirectResponse(url='/authentication/success')
     except HTTPException as he:
         return responses.RedirectResponse(url=f'/authentication/error?detail={he.detail}')

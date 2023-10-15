@@ -4,27 +4,27 @@ from datetime import timedelta
 
 
 async def getInterviewDuration(style_id: int) -> int:
-    # Dummy function to retrieve interview duration
+    # retrieve interview duration
     return 60  # 60 minutes
 
 async def getCandidateAvailability(candidate_id: int) -> List[Dict[str, Any]]:
-    # Dummy function to retrieve candidate's availability
+    # retrieve candidate's availability
     return []
 
 async def getQualifiedInterviewers(job_id: int, style_id: int, organization_id: int) -> List[Dict[str, Any]]:
-    # Dummy function to retrieve list of qualified interviewers
+    # retrieve list of qualified interviewers
     return []
 
 async def getInterviewerAvailability(interviewer_id: int, start_time: str, end_time: str) -> List[Dict[str, Any]]:
-    # Dummy function to retrieve interviewer's availability
+    # retrieve interviewer's availability
     return []
 
 async def getCandidateInfo(candidate_id: int) -> Dict[str, Any]:
-    # Dummy function to retrieve candidate's info
+    # retrieve candidate's info
     return {}
 
 async def getInterviewerInfo(interviewer_id: int) -> Dict[str, Any]:
-    # Dummy function to retrieve interviewer's info
+    # retrieve interviewer's info
     return {}
 
 def shuffle(lst: List[Any]) -> List[Any]:

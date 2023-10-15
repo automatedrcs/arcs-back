@@ -1,3 +1,4 @@
+# todo: review requirements and clean up unused libraries
 fastapi[all]
 uvicorn[standard]
 gunicorn
@@ -13,7 +14,6 @@ cryptography
 asyncpg
 httpx
 pydantic
-authlib
 pyjwt
 datetime
 bcrypt
@@ -21,3 +21,5 @@ psycopg2
 # psycopg2-binary
 uuid
 starlette
+python-oauthlib
+python-oauthlib
