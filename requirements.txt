@@ -22,4 +22,3 @@ psycopg2
 uuid
 starlette
 oauthlib
-python-oauthlib
