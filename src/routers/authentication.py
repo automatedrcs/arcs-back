@@ -66,7 +66,17 @@ async def user_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-        return await google_oauth.authorize_redirect(request, redirect_uri, access_type="offline")
+
+        # Construct the authorization URL manually
+        authorization_url, _ = google_oauth.create_authorization_url(
+            'https://accounts.google.com/o/oauth2/auth',
+            redirect_uri=redirect_uri,
+            scope=['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.email'],
+            access_type='offline',
+            prompt='consent'
+        )
+
+        return responses.RedirectResponse(url=authorization_url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -75,7 +85,17 @@ async def person_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        return await google_oauth.authorize_redirect(request, redirect_uri, access_type="offline")
+
+        # Construct the authorization URL manually
+        authorization_url, _ = google_oauth.create_authorization_url(
+            'https://accounts.google.com/o/oauth2/auth',
+            redirect_uri=redirect_uri,
+            scope=['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.email'],
+            access_type='offline',
+            prompt='consent'
+        )
+
+        return responses.RedirectResponse(url=authorization_url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
