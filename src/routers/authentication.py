@@ -139,7 +139,9 @@ async def person_auth(request: Request, db: Session = Depends(database.get_db)):
             include_client_id=True)  # Include client_id and client_secret
         token = token_response
 
-        userinfo = await google_oauth.google.get('https://www.googleapis.com/oauth2/v2/userinfo', token=token)
+        userinfo = await google_oauth.parse_request_response(
+            'https://www.googleapis.com/oauth2/v2/userinfo',
+            token=token)
 
         if "email" not in userinfo.json():
             logger.error("Email not found in the userinfo response.")
