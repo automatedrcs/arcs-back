@@ -3,7 +3,7 @@
 from utils import get_secret
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from oauthlib.oauth2 import WebApplicationClient
+from authlib.integrations.starlette_client import OAuth
 
 # Database constants
 DB_USERNAME = get_secret("DB_USERNAME")
@@ -34,7 +34,21 @@ credentials_exception = HTTPException(
     headers={"WWW-Authenticate": "Bearer"},
 )
 
-google_oauth = WebApplicationClient(get_secret("CLIENT_ID"))
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+oauth = OAuth()
+
+google = oauth.register(
+    name="google",
+    server_metadata_url=GOOGLE_DISCOVERY_URL,
+    client_kwargs={
+        'scope': 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email',
+        'access_type': 'offline',  # Request offline access to get refresh tokens
+        'prompt': 'consent',
+    },
+    client_id=get_secret("CLIENT_ID"),
+    client_secret=get_secret("CLIENT_SECRET"),
+    redirect_uri=get_secret("REDIRECT_URL"),
+)
 
 # Session Middleware
 SESSION_MIDDLEWARE_KEY = get_secret("SESSION_MIDDLEWARE_KEY")
