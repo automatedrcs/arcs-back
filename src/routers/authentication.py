@@ -51,7 +51,13 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         if user.data is None:
             user.data = {}
 
-        user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = tokens['refresh_token']
+        if 'refresh_token' in tokens:
+            logger.info(f"Refresh token exists for user {user_email}.")
+        else:
+            logger.warning(f"No refresh token found for user {user_email}.")
+        encrypted_refresh_token = encrypt(tokens['refresh_token'])
+        user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
+
         db.commit()
 
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
@@ -102,7 +108,13 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
         if person.data is None:
             person.data = {}
 
-        person.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = tokens['refresh_token']
+        if 'refresh_token' in tokens:
+            logger.info(f"Refresh token exists for person {person_email}.")
+        else:
+            logger.warning(f"No refresh token found for person {person_email}.")
+        
+        encrypted_refresh_token = encrypt(tokens['refresh_token'])
+        person.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
         db.commit()
 
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
