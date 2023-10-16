@@ -46,7 +46,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         user = db.query(models.User).filter_by(email=user_email).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        print("user: ", str(user))
+        print("user: ", str(user.id))
         if user.data is None:
             user.data = {}
 
