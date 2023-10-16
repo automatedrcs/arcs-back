@@ -52,7 +52,8 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
             user.data = {}
 
         if 'refresh_token' in tokens:
-            encrypted_refresh_token = encrypt(tokens['refresh_token'])
+            print("refresh_token: ", str(tokens.get('refresh_token')))
+            encrypted_refresh_token = encrypt(tokens.get('refresh_token'))
             print("encrypted_refresh_token: ", str(encrypted_refresh_token))
             print("decrypted refresh token: ", str(decrypt(encrypted_refresh_token)))
             user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
@@ -63,9 +64,10 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         db.commit()
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
     except HTTPException as he:
+        print("HTTPException error: ", he)
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={he.detail}")
     except Exception as e:
-        logger.error(traceback.format_exc())
+        print(traceback.format_exc())
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={str(e)}")
 
 @authentication_router.get('/google/login/person')
