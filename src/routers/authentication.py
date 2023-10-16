@@ -66,8 +66,8 @@ async def user_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-        authorization_url, state = await oauth.google.authorization_url(redirect_uri)
-        # Save the state to validate it later in the callback
+        client = oauth.google.create_client()
+        authorization_url, state = client.authorization_url(redirect_uri)
         request.session["oauth_state"] = state
         return responses.RedirectResponse(authorization_url)
     except Exception as e:
@@ -78,8 +78,8 @@ async def person_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        authorization_url, state = await oauth.google.authorization_url(redirect_uri)
-        # Save the state to validate it later in the callback
+        client = oauth.google.create_client()
+        authorization_url, state = client.authorization_url(redirect_uri)
         request.session["oauth_state"] = state
         return responses.RedirectResponse(authorization_url)
     except Exception as e:
