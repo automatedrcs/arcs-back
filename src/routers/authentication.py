@@ -50,7 +50,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         if user.data is None:
             user.data = {}
-
+        print("tokens: ", str(tokens))
         if 'refresh_token' in tokens:
             logger.info(f"Refresh token exists for user {user_email}.")
         else:
@@ -73,7 +73,7 @@ async def person_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email"
+        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email"
         return responses.RedirectResponse(auth_url)
     except Exception as e:
         logger.error(traceback.format_exc())
