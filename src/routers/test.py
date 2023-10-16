@@ -47,6 +47,7 @@ def test_connection(
 
     print("tested user: ", str(user.id))
     print("tested user: ", str(user.email))
+    print("tested user data: ", str(user.data))
     
     if not refresh_token:
         return {"message": "Connection successful. No Google Refresh Token found for the user.", "data": {}}
