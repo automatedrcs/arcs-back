@@ -38,7 +38,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         tokens = response.json()
         access_token = tokens['access_token']
         
-        # Fetch user email using access_token
+              # Fetch user email using access_token
         response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {access_token}"})
         user_info = response.json()
         user_email = user_info['email']
@@ -47,11 +47,15 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         user = db.query(models.User).filter_by(email=user_email).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        user.refresh_token = tokens['refresh_token']
+
+        if user.data is None:
+            user.data = {}
+
+        user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = tokens['refresh_token']
         db.commit()
 
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
-
+    
     except HTTPException as he:
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={he.detail}")
     except Exception as e:
@@ -94,9 +98,11 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
         person = db.query(models.Person).filter_by(email=person_email).first()
         if not person:
             raise HTTPException(status_code=404, detail="Person not found")
-        
-        # Assuming you'll be adding encrypted refresh_token handling to the Person model as well:
-        person.refresh_token = tokens['refresh_token']
+
+        if person.data is None:
+            person.data = {}
+
+        person.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = tokens['refresh_token']
         db.commit()
 
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
