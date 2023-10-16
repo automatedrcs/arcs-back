@@ -13,14 +13,10 @@ authentication_router = APIRouter()
 
 @authentication_router.get('/google/login/user')
 async def user_login(request: Request):
-    try:
-        BASE_URL = get_secret("BASE_URL")
-        redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email"
-        return responses.RedirectResponse(auth_url)
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={str(e)}")
+    BASE_URL = get_secret("BASE_URL")
+    redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email&prompt=consent"
+    return responses.RedirectResponse(auth_url)
 
 @authentication_router.get('/google/callback/user')
 async def user_callback(code: str, db: Session = Depends(database.get_db)):
@@ -37,8 +33,8 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         response = requests.post(token_url, data=data)
         tokens = response.json()
         access_token = tokens['access_token']
-        
-              # Fetch user email using access_token
+
+        # Fetch user email using access_token
         response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {access_token}"})
         user_info = response.json()
         user_email = user_info['email']
@@ -50,18 +46,16 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         if user.data is None:
             user.data = {}
-        print("tokens: ", str(tokens))
+
         if 'refresh_token' in tokens:
-            logger.info(f"Refresh token exists for user {user_email}.")
+            encrypted_refresh_token = encrypt(tokens['refresh_token'])
+            user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
         else:
+            # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
             logger.warning(f"No refresh token found for user {user_email}.")
-        encrypted_refresh_token = encrypt(tokens['refresh_token'])
-        user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
 
         db.commit()
-
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
-    
     except HTTPException as he:
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={he.detail}")
     except Exception as e:
@@ -70,14 +64,10 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
 @authentication_router.get('/google/login/person')
 async def person_login(request: Request):
-    try:
-        BASE_URL = get_secret("BASE_URL")
-        redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email"
-        return responses.RedirectResponse(auth_url)
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={str(e)}")
+    BASE_URL = get_secret("BASE_URL")
+    redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email&prompt=consent"
+    return responses.RedirectResponse(auth_url)
 
 @authentication_router.get('/google/callback/person')
 async def person_callback(code: str, db: Session = Depends(database.get_db)):
@@ -94,7 +84,7 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
         response = requests.post(token_url, data=data)
         tokens = response.json()
         access_token = tokens['access_token']
-        
+
         # Fetch person email using access_token
         response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {access_token}"})
         person_info = response.json()
@@ -109,16 +99,14 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
             person.data = {}
 
         if 'refresh_token' in tokens:
-            logger.info(f"Refresh token exists for person {person_email}.")
+            encrypted_refresh_token = encrypt(tokens['refresh_token'])
+            person.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
         else:
+            # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
             logger.warning(f"No refresh token found for person {person_email}.")
-        
-        encrypted_refresh_token = encrypt(tokens['refresh_token'])
-        person.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
+
         db.commit()
-
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
-
     except HTTPException as he:
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={he.detail}")
     except Exception as e:
@@ -127,12 +115,8 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
 
 @authentication_router.get('/success')
 async def success():
-    FRONT_URL = get_secret("FRONT_URL")
-    # You can send a response message or just redirect to your frontend's success page.
-    return responses.RedirectResponse(url=f"{FRONT_URL}/authentication-success")
+    return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/authentication-success")
 
 @authentication_router.get('/error')
 async def error(detail: str):
-    FRONT_URL = get_secret("FRONT_URL")
-    # You can send a response message with the error or redirect to your frontend's error page with details.
-    return responses.RedirectResponse(url=f"{FRONT_URL}/authentication-error?detail={detail}")
+    return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/authentication-error?detail={detail}")
