@@ -53,12 +53,16 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         if 'refresh_token' in tokens:
             encrypted_refresh_token = encrypt(tokens.get('refresh_token'))
-
+            print("encrypted refresh token: ", encrypted_refresh_token)
             if not user.data.get("authentication"):
+                print("user.data: ", str(user.data))
                 user.data["authentication"] = {}
+                print("user.data: ", str(user.data))
             if not user.data["authentication"].get("google"):
                 user.data["authentication"]["google"] = {}
+                print("user.data: ", str(user.data))
             user.data["authentication"]["google"]["refresh_token"] = encrypted_refresh_token
+            print("user.data: ", str(user.data))
         else:
             # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
             print(f"No refresh token found for user {user_email}.")
