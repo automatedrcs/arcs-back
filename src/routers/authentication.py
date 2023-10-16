@@ -67,7 +67,18 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
             # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
             print(f"No refresh token found for user {user_email}.")
 
+        # Before committing:
+        print(f"Before commit - user.data for {user_email}: ", user.data)
+
         db.commit()
+
+        # After committing:
+        refreshed_user = db.query(models.User).filter_by(email=user_email).first()
+        if refreshed_user:
+            print(f"After commit - user.data for {user_email}: ", refreshed_user.data)
+        else:
+            print(f"After commit - No user found for {user_email}.")
+
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
     except HTTPException as he:
         print("HTTPException error: ", he)
