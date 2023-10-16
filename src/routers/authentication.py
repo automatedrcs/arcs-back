@@ -69,6 +69,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         # Before committing:
         print(f"Before commit - user.data for {user_email}: ", user.data)
+        user.data = dict(user.data)
         db.add(user)
         print("==== DEBUGGING ====")
         print(f"Current user permission: {user.permission}")
@@ -85,7 +86,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
             print(f"Re-queried user permission: {re_queried_user.permission}")
         else:
             print(f"Re-query failed for user {user_email}.")
-            
+
         db.refresh(user)
         # After committing:
         refreshed_user = db.query(models.User).filter_by(email=user_email).first()
