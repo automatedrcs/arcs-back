@@ -69,9 +69,9 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         # Before committing:
         print(f"Before commit - user.data for {user_email}: ", user.data)
-
+        db.add(user)
         db.commit()
-
+        db.refresh(user)
         # After committing:
         refreshed_user = db.query(models.User).filter_by(email=user_email).first()
         if refreshed_user:
