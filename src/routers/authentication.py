@@ -16,7 +16,7 @@ async def user_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('GOOGLE_CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email"
+        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email"
         return responses.RedirectResponse(auth_url)
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -29,8 +29,8 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
-            "client_id": get_secret('GOOGLE_CLIENT_ID'),
-            "client_secret": get_secret('GOOGLE_CLIENT_SECRET'),
+            "client_id": get_secret('CLIENT_ID'),
+            "client_secret": get_secret('CLIENT_SECRET'),
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code"
         }
@@ -67,7 +67,7 @@ async def person_login(request: Request):
     try:
         BASE_URL = get_secret("BASE_URL")
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('GOOGLE_CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email"
+        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email"
         return responses.RedirectResponse(auth_url)
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -80,8 +80,8 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
-            "client_id": get_secret('GOOGLE_CLIENT_ID'),
-            "client_secret": get_secret('GOOGLE_CLIENT_SECRET'),
+            "client_id": get_secret('CLIENT_ID'),
+            "client_secret": get_secret('CLIENT_SECRET'),
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code"
         }
