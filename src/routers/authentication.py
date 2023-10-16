@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from database import database, schema, models
 from utils import get_secret, encrypt, decrypt
 import logging
@@ -78,6 +79,8 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         user.permission = "test_permission"
         print(f"Modified user permission: {user.permission}")
+
+        flag_modified(user, "data")
 
         db.commit()
 
