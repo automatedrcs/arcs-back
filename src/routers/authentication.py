@@ -52,11 +52,13 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
             user.data = {}
 
         if 'refresh_token' in tokens:
-            print("refresh_token: ", str(tokens.get('refresh_token')))
             encrypted_refresh_token = encrypt(tokens.get('refresh_token'))
-            print("encrypted_refresh_token: ", str(encrypted_refresh_token))
-            print("decrypted refresh token: ", str(decrypt(encrypted_refresh_token)))
-            user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
+
+            if not user.data.get("authentication"):
+                user.data["authentication"] = {}
+            if not user.data["authentication"].get("google"):
+                user.data["authentication"]["google"] = {}
+            user.data["authentication"]["google"]["refresh_token"] = encrypted_refresh_token
         else:
             # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
             print(f"No refresh token found for user {user_email}.")
@@ -108,10 +110,15 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
 
         if 'refresh_token' in tokens:
             encrypted_refresh_token = encrypt(tokens['refresh_token'])
-            person.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
+
+            if not person.data.get("authentication"):
+                person.data["authentication"] = {}
+            if not person.data["authentication"].get("google"):
+                person.data["authentication"]["google"] = {}
+            person.data["authentication"]["google"]["refresh_token"] = encrypted_refresh_token
         else:
             # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
-            logger.warning(f"No refresh token found for person {person_email}.")
+            print(f"No refresh token found for person {person_email}.")
 
         db.commit()
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
