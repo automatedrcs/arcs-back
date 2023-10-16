@@ -8,19 +8,21 @@ from datetime import timedelta
 
 
 async def getInterviewDuration(style_id: int) -> int:
-    # retrieve interview duration
+    # retrieve interview duration from template.data.duration
     return 60  # 60 minutes
 
 async def getCandidateAvailability(candidate_id: int) -> List[Dict[str, Any]]:
-    # retrieve candidate's availability
+    # retrieve candidate's availability from the user.availabilities
     return []
 
 async def getQualifiedInterviewers(job_id: int, style_id: int, organization_id: int) -> List[Dict[str, Any]]:
-    # retrieve list of qualified interviewers
+    # retrieve list of qualified interviewers through comparision with person.data.tree json
+    # where person.role is interviewer
     return []
 
 async def getInterviewerAvailability(interviewer_id: int, start_time: str, end_time: str) -> List[Dict[str, Any]]:
-    # retrieve interviewer's availability
+    # retrieve interviewer's availability from their google calendar using
+    # stored refresh token person.data.authentication.google.refresh_token 
     return []
 
 async def getCandidateInfo(candidate_id: int) -> Dict[str, Any]:
