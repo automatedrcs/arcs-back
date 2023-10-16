@@ -40,12 +40,13 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {access_token}"})
         user_info = response.json()
         user_email = user_info['email']
+        print("user email: ", str(user_email))
 
         # Store the refresh token for the user
         user = db.query(models.User).filter_by(email=user_email).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-
+        print("user: ", str(user))
         if user.data is None:
             user.data = {}
 
