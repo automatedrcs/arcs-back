@@ -53,10 +53,12 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
         if 'refresh_token' in tokens:
             encrypted_refresh_token = encrypt(tokens['refresh_token'])
+            print("encrypted_refresh_token: ", str(encrypted_refresh_token))
+            print("decrypted refresh token: ", str(decrypt(encrypted_refresh_token)))
             user.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
         else:
             # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
-            logger.warning(f"No refresh token found for user {user_email}.")
+            print(f"No refresh token found for user {user_email}.")
 
         db.commit()
         return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
