@@ -15,7 +15,7 @@ authentication_router = APIRouter()
 async def user_login(request: Request):
     BASE_URL = get_secret("BASE_URL")
     redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email&prompt=consent"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email&prompt=consent&access_type=offline"
     return responses.RedirectResponse(auth_url)
 
 @authentication_router.get('/google/callback/user')
@@ -32,6 +32,8 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         }
         response = requests.post(token_url, data=data)
         tokens = response.json()
+
+        print("tokens: ", str(tokens))
         access_token = tokens['access_token']
 
         # Fetch user email using access_token
@@ -66,7 +68,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 async def person_login(request: Request):
     BASE_URL = get_secret("BASE_URL")
     redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email&prompt=consent"
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email&prompt=consent&access_type=offline"
     return responses.RedirectResponse(auth_url)
 
 @authentication_router.get('/google/callback/person')
