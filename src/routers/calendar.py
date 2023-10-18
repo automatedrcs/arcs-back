@@ -50,9 +50,6 @@ async def fetch_google_calendar_events(db: Session, entity, start_time, end_time
     credentials = Credentials(token=refreshed_token['access_token'])
     service = build("calendar", "v3", credentials=credentials)
 
-     timeMin_formatted = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-    timeMax_formatted = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-
     datetime_formats = [
         ('Original Format', '%Y-%m-%dT%H:%M:%SZ'),
         ('SO Answer 1', '%Y-%m-%dT%H:%M:%S'),
