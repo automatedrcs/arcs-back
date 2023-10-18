@@ -164,7 +164,7 @@ def login_for_token(form_data: schema.UserLogin = Body(...), db: Session = Depen
     return {"access_token": access_token, "token_type": "bearer"}
 
 @user_router.post("/token/refresh")
-def refresh_token_endpoint(request: Request, db: Session = Depends(database.get_db)):
+def refresh_token_endpoint(response: Response, db: Session = Depends(database.get_db)):
     encrypted_refresh_token_data = request.cookies.get("refresh_token")
     if not encrypted_refresh_token_data:
         raise HTTPException(status_code=400, detail="Refresh token not provided.")
@@ -181,9 +181,11 @@ def refresh_token_endpoint(request: Request, db: Session = Depends(database.get_
             raise credentials_exception
         
         new_access_token = create_access_token(data={"sub": username})
+        encrypted_access_token = encrypt(new_access_token)
+        response.set_cookie(key="access_token", value=encrypted_access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60)
     except jwt.JWTError:
         raise credentials_exception
-    return {"access_token": new_access_token, "token_type": "bearer"}
+    return {"message": "Token refreshed successfully"}
 
 @user_router.get("/me")
 def get_my_details(current_user: models.User = Depends(get_current_user)):

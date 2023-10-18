@@ -31,7 +31,7 @@ def refresh_google_token(refresh_token: str) -> dict:
     r = requests.post('https://oauth2.googleapis.com/token', data=data)
     return r.json()
 
-async def fetch_google_calendar_events(entity, start_time, end_time):
+async def fetch_google_calendar_events(db: Session, entity, start_time, end_time):
     # Check if authentication and google keys exist
     if "authentication" not in entity.data or "google" not in entity.data["authentication"] or "refresh_token" not in entity.data["authentication"]["google"]:
         raise HTTPException(status_code=403, detail="Refresh Token required for Google Calendar operations")
@@ -62,4 +62,4 @@ async def get_user_calendar_events(
     db: Session = Depends(database.get_db)
 ):
     user = get_user_by_id(db, user_id)
-    return await fetch_google_calendar_events(user, start_time, end_time)
+    return await fetch_google_calendar_events(db, user, start_time, end_time)
