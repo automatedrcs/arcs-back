@@ -59,7 +59,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
         user_email = response.json()['email']
 
         # Store refresh token
-        store_refresh_token(data, tokens, models.User, user_email, db)
+        store_refresh_token(tokens, models.User, user_email, db)
 
         return responses.RedirectResponse(url=f"{FRONT_URL}/success")
     except HTTPException as he:
@@ -98,7 +98,7 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
         person_email = response.json()['email']
 
         # Store refresh token
-        store_refresh_token(data, tokens, models.Person, person_email, db)
+        store_refresh_token(tokens, models.Person, person_email, db)
 
         return responses.RedirectResponse(url=f"{FRONT_URL}/success")
     except HTTPException as he:
