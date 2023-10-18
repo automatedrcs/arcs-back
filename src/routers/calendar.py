@@ -1,12 +1,13 @@
 # routers/calendar.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import database, models
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from utils import decrypt, get_secret
 import requests
+from datetime import datetime
 
 calendar_router = APIRouter()
 
@@ -36,48 +37,35 @@ def refresh_google_token(refresh_token: str) -> dict:
     r = requests.post('https://oauth2.googleapis.com/token', data=data)
     return r.json()
 
-@calendar_router.get("/events/user")
-async def get_user_calendar_events(
-    user_id: str, 
-    start_time: str, 
-    end_time: str, 
-    db: Session = Depends(database.get_db)
-):
-    user = get_user_by_id(db, user_id)
-    
-    if "authentication" not in user.data or "google" not in user.data["authentication"] or "refresh_token" not in user.data["authentication"]["google"]:
+async def fetch_google_calendar_events(entity, start_time, end_time):
+    if "authentication" not in entity.data or "google" not in entity.data["authentication"] or "refresh_token" not in entity.data["authentication"]["google"]:
         raise HTTPException(status_code=403, detail="Refresh Token required for Google Calendar operations")
 
-    refreshed_token = refresh_google_token(user.data["authentication"]["google"]["refresh_token"])
+    refreshed_token = refresh_google_token(entity.data["authentication"]["google"]["refresh_token"])
     access_token = refreshed_token['access_token']
 
     credentials = Credentials(token=access_token)
     service = build("calendar", "v3", credentials=credentials)
 
-    events_result = service.events().list(calendarId='primary', timeMin=start_time, timeMax=end_time, singleEvents=True, orderBy='startTime').execute()
-    events = events_result.get('items', [])
+    events_result = service.events().list(calendarId='primary', timeMin=start_time.isoformat() + 'Z', timeMax=end_time.isoformat() + 'Z', singleEvents=True, orderBy='startTime').execute()
+    return events_result.get('items', [])
 
-    return events
+@calendar_router.get("/events/user")
+async def get_user_calendar_events(
+    user_id: str, 
+    start_time: datetime = Query(..., format="%Y-%m-%dT%H:%M:%S"),
+    end_time: datetime = Query(..., format="%Y-%m-%dT%H:%M:%S"),
+    db: Session = Depends(database.get_db)
+):
+    user = get_user_by_id(db, user_id)
+    return await fetch_google_calendar_events(user, start_time, end_time)
 
 @calendar_router.get("/events/person")
 async def get_person_calendar_events(
     person_id: str, 
-    start_time: str, 
-    end_time: str, 
+    start_time: datetime = Query(..., format="%Y-%m-%dT%H:%M:%S"),
+    end_time: datetime = Query(..., format="%Y-%m-%dT%H:%M:%S"),
     db: Session = Depends(database.get_db)
 ):
     person = get_person_by_id(db, person_id)
-    
-    if "authentication" not in person.data or "google" not in person.data["authentication"] or "refresh_token" not in person.data["authentication"]["google"]:
-        raise HTTPException(status_code=403, detail="Refresh Token required for Google Calendar operations")
-
-    refreshed_token = refresh_google_token(person.data["authentication"]["google"]["refresh_token"])
-    access_token = refreshed_token['access_token']
-
-    credentials = Credentials(token=access_token)
-    service = build("calendar", "v3", credentials=credentials)
-
-    events_result = service.events().list(calendarId='primary', timeMin=start_time, timeMax=end_time, singleEvents=True, orderBy='startTime').execute()
-    events = events_result.get('items', [])
-
-    return events
+    return await fetch_google_calendar_events(person, start_time, end_time)

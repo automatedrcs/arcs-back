@@ -2,126 +2,89 @@ from fastapi import APIRouter, Depends, HTTPException, Request, responses
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from database import database, schema, models
-from utils import get_secret, encrypt, decrypt
-import logging
+from utils import encrypt, decrypt
+from config import BASE_URL, CLIENT_ID, CLIENT_SECRET, FRONT_URL, logger
 import traceback
 import requests
 
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
-
 authentication_router = APIRouter()
 
+def generate_google_auth_url(endpoint: str, scope: str) -> str:
+    redirect_uri = f"{BASE_URL}{endpoint}"
+    return f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={CLIENT_ID}&redirect_uri={redirect_uri}&scope={scope}&prompt=consent&access_type=offline"
+
+
+def store_refresh_token(tokens: dict, model, email: str, db: Session):
+    instance = db.query(model).filter_by(email=email).first()
+    if not instance:
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+    
+    instance.data = instance.data or {}
+    if 'refresh_token' in tokens:
+        encrypted_refresh_token = encrypt(tokens['refresh_token'])
+        instance.data.setdefault("authentication", {}).setdefault("google", {})["refresh_token"] = encrypted_refresh_token
+
+        db.add(instance)
+        flag_modified(instance, "data")
+        db.commit()
+    else:
+        logger.warning(f"No refresh token found for {model.__name__} {email}")
+
+
 @authentication_router.get('/google/login/user')
-async def user_login(request: Request):
-    BASE_URL = get_secret("BASE_URL")
-    redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
-    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email&prompt=consent&access_type=offline"
+async def user_login():
+    auth_url = generate_google_auth_url(BASE_URL, '/authentication/google/callback/user', 'https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email')
     return responses.RedirectResponse(auth_url)
+
 
 @authentication_router.get('/google/callback/user')
 async def user_callback(code: str, db: Session = Depends(database.get_db)):
     try:
-        redirect_uri = f"{get_secret('BASE_URL')}/authentication/google/callback/user"
+        # Getting the access token
+        redirect_uri = f"{BASE_URL}/authentication/google/callback/user"
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
-            "client_id": get_secret('CLIENT_ID'),
-            "client_secret": get_secret('CLIENT_SECRET'),
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code"
         }
         response = requests.post(token_url, data=data)
         tokens = response.json()
-
-        print("tokens: ", str(tokens))
         access_token = tokens['access_token']
 
-        # Fetch user email using access_token
+        # Fetch user email
         response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {access_token}"})
-        user_info = response.json()
-        user_email = user_info['email']
-        print("user email: ", str(user_email))
+        user_email = response.json()['email']
 
-        # Store the refresh token for the user
-        user = db.query(models.User).filter_by(email=user_email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        print("user: ", str(user.id))
-        print(str(user.email))
-        if user.data is None:
-            user.data = {}
+        # Store refresh token
+        store_refresh_token(data, tokens, models.User, user_email, db)
 
-        if 'refresh_token' in tokens:
-            encrypted_refresh_token = encrypt(tokens.get('refresh_token'))
-            print("encrypted refresh token: ", encrypted_refresh_token)
-            if not user.data.get("authentication"):
-                print("user.data: ", str(user.data))
-                user.data["authentication"] = {}
-                print("user.data: ", str(user.data))
-            if not user.data["authentication"].get("google"):
-                user.data["authentication"]["google"] = {}
-                print("user.data: ", str(user.data))
-            user.data["authentication"]["google"]["refresh_token"] = encrypted_refresh_token
-            print("user.data: ", str(user.data))
-        else:
-            # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
-            print(f"No refresh token found for user {user_email}.")
-
-        # Before committing:
-        print(f"Before commit - user.data for {user_email}: ", user.data)
-        user.data = dict(user.data)
-        db.add(user)
-        print("==== DEBUGGING ====")
-        print(f"Current user permission: {user.permission}")
-        print(f"Current user data: {user.data}")
-        print("====================")
-
-        user.permission = "test_permission"
-        print(f"Modified user permission: {user.permission}")
-
-        flag_modified(user, "data")
-
-        db.commit()
-
-        re_queried_user = db.query(models.User).filter_by(email=user_email).first()
-        if re_queried_user:
-            print(f"Re-queried user permission: {re_queried_user.permission}")
-        else:
-            print(f"Re-query failed for user {user_email}.")
-
-        db.refresh(user)
-        # After committing:
-        refreshed_user = db.query(models.User).filter_by(email=user_email).first()
-        if refreshed_user:
-            print(f"After commit - user.data for {user_email}: ", refreshed_user.data)
-        else:
-            print(f"After commit - No user found for {user_email}.")
-
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
+        return responses.RedirectResponse(url=f"{FRONT_URL}/success")
     except HTTPException as he:
-        print("HTTPException error: ", he)
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={he.detail}")
+        logger.error(f"HTTPException error: {he}")
+        return responses.RedirectResponse(url=f"{FRONT_URL}/error?detail={he.detail}")
     except Exception as e:
-        print(traceback.format_exc())
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={str(e)}")
+        logger.error(traceback.format_exc())
+        return responses.RedirectResponse(url=f"{FRONT_URL}/error?detail={str(e)}")
+
 
 @authentication_router.get('/google/login/person')
-async def person_login(request: Request):
-    BASE_URL = get_secret("BASE_URL")
-    redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
-    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={get_secret('CLIENT_ID')}&redirect_uri={redirect_uri}&scope=https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email&prompt=consent&access_type=offline"
+async def person_login():
+    auth_url = generate_google_auth_url(BASE_URL, '/authentication/google/callback/person', 'https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email')
     return responses.RedirectResponse(auth_url)
+
 
 @authentication_router.get('/google/callback/person')
 async def person_callback(code: str, db: Session = Depends(database.get_db)):
     try:
-        redirect_uri = f"{get_secret('BASE_URL')}/authentication/google/callback/person"
-        token_url = "https://oauth2.googleapis.com/token"
+        # Getting the access token
+        redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
         data = {
             "code": code,
-            "client_id": get_secret('CLIENT_ID'),
-            "client_secret": get_secret('CLIENT_SECRET'),
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code"
         }
@@ -129,43 +92,27 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
         tokens = response.json()
         access_token = tokens['access_token']
 
-        # Fetch person email using access_token
+        # Fetch person email
         response = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {access_token}"})
-        person_info = response.json()
-        person_email = person_info['email']
+        person_email = response.json()['email']
 
-        # Store the refresh token for the person
-        person = db.query(models.Person).filter_by(email=person_email).first()
-        if not person:
-            raise HTTPException(status_code=404, detail="Person not found")
+        # Store refresh token
+        store_refresh_token(data, tokens, models.Person, person_email, db)
 
-        if person.data is None:
-            person.data = {}
-
-        if 'refresh_token' in tokens:
-            encrypted_refresh_token = encrypt(tokens['refresh_token'])
-
-            if not person.data.get("authentication"):
-                person.data["authentication"] = {}
-            if not person.data["authentication"].get("google"):
-                person.data["authentication"]["google"] = {}
-            person.data["authentication"]["google"]["refresh_token"] = encrypted_refresh_token
-        else:
-            # Decide how you want to handle the lack of a refresh token. For now, I'll leave this as a log message.
-            print(f"No refresh token found for person {person_email}.")
-
-        db.commit()
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/success")
+        return responses.RedirectResponse(url=f"{FRONT_URL}/success")
     except HTTPException as he:
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={he.detail}")
+        logger.error(f"HTTPException error: {he}")
+        return responses.RedirectResponse(url=f"{FRONT_URL}/error?detail={he.detail}")
     except Exception as e:
         logger.error(traceback.format_exc())
-        return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/error?detail={str(e)}")
+        return responses.RedirectResponse(url=f"{FRONT_URL}/error?detail={str(e)}")
+
 
 @authentication_router.get('/success')
 async def success():
-    return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/authentication-success")
+    return responses.RedirectResponse(url=f"{FRONT_URL}/authentication-success")
+
 
 @authentication_router.get('/error')
 async def error(detail: str):
-    return responses.RedirectResponse(url=f"{get_secret('FRONT_URL')}/authentication-error?detail={detail}")
+    return responses.RedirectResponse(url=f"{FRONT_URL}/authentication-error?detail={detail}")
