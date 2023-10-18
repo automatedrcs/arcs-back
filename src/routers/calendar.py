@@ -1,3 +1,5 @@
+# routers/calendar.py
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import database, models
@@ -30,10 +32,22 @@ def refresh_google_token(refresh_token: str) -> dict:
     return r.json()
 
 async def fetch_google_calendar_events(entity, start_time, end_time):
+    # Check if authentication and google keys exist
     if "authentication" not in entity.data or "google" not in entity.data["authentication"] or "refresh_token" not in entity.data["authentication"]["google"]:
         raise HTTPException(status_code=403, detail="Refresh Token required for Google Calendar operations")
+    
     refresh_token = entity.data["authentication"]["google"]["refresh_token"]
     refreshed_token = refresh_google_token(refresh_token)
+
+    # Check if the refreshed token was valid
+    if 'error' in refreshed_token:
+        print(f"Refresh token error: {refreshed_token['error_description']}")
+        # Delete the refresh token
+        del entity.data["authentication"]["google"]["refresh_token"]
+        # Commit changes to the database
+        db.commit()
+        raise HTTPException(status_code=403, detail="Invalid Refresh Token")
+
     access_token = refreshed_token['access_token']
     credentials = Credentials(token=access_token)
     service = build("calendar", "v3", credentials=credentials)
