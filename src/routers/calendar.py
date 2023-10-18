@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import database, models
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+import googleapiclient
 from utils import decrypt, get_secret
 import requests
 from datetime import datetime
@@ -39,9 +40,8 @@ async def fetch_google_calendar_events(db: Session, entity, start_time, end_time
     refresh_token = entity.data["authentication"]["google"]["refresh_token"]
     refreshed_token = refresh_google_token(refresh_token)
 
-    # Check if the refreshed token was valid
-    if 'error' in refreshed_token:
-        print(f"Refresh token error: {refreshed_token['error_description']}")
+    if 'error' in refreshed_token or 'access_token' not in refreshed_token:
+        print(f"Refresh token error: {refreshed_token.get('error_description', 'Unknown error')}")
         # Delete the refresh token
         del entity.data["authentication"]["google"]["refresh_token"]
         # Commit changes to the database
@@ -51,8 +51,20 @@ async def fetch_google_calendar_events(db: Session, entity, start_time, end_time
     access_token = refreshed_token['access_token']
     credentials = Credentials(token=access_token)
     service = build("calendar", "v3", credentials=credentials)
-    events_result = service.events().list(calendarId='primary', timeMin=start_time.isoformat() + 'Z', timeMax=end_time.isoformat() + 'Z', singleEvents=True, orderBy='startTime').execute()
-    return events_result.get('items', [])
+    
+    try:
+        events_result = service.events().list(
+            calendarId='primary',
+            timeMin=start_time.isoformat() + 'Z',
+            timeMax=end_time.isoformat() + 'Z',
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        return events_result.get('items', [])
+    except googleapiclient.errors.HttpError as error:
+        print(f"Google Calendar API error: {error}")
+        raise HTTPException(status_code=500, detail="Error fetching Google Calendar events")
+
 
 @calendar_router.get("/events/user")
 async def get_user_calendar_events(
