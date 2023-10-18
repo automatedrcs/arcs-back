@@ -33,25 +33,29 @@ def refresh_google_token(refresh_token: str) -> dict:
     return r.json()
 
 async def fetch_google_calendar_events(db: Session, entity, start_time, end_time):
-    # Check if authentication and google keys exist
     if "authentication" not in entity.data or "google" not in entity.data["authentication"] or "refresh_token" not in entity.data["authentication"]["google"]:
         raise HTTPException(status_code=403, detail="Refresh Token required for Google Calendar operations")
-    
+
     refresh_token = entity.data["authentication"]["google"]["refresh_token"]
     refreshed_token = refresh_google_token(refresh_token)
 
     if 'error' in refreshed_token or 'access_token' not in refreshed_token:
         print(f"Refresh token error: {refreshed_token.get('error_description', 'Unknown error')}")
-        # Delete the refresh token
         del entity.data["authentication"]["google"]["refresh_token"]
-        # Commit changes to the database
         db.commit()
         raise HTTPException(status_code=403, detail="Invalid Refresh Token")
 
     access_token = refreshed_token['access_token']
     credentials = Credentials(token=access_token)
     service = build("calendar", "v3", credentials=credentials)
+
+    # Print out the start and end times
+    print(f"Start time: {start_time.isoformat() + 'Z'}")
+    print(f"End time: {end_time.isoformat() + 'Z'}")
     
+    # Print out the access token (remove this after debugging!)
+    print(f"Access Token: {access_token}")  # Please ensure this gets removed after debugging!
+
     try:
         events_result = service.events().list(
             calendarId='primary',
@@ -64,7 +68,6 @@ async def fetch_google_calendar_events(db: Session, entity, start_time, end_time
     except googleapiclient.errors.HttpError as error:
         print(f"Google Calendar API error: {error}")
         raise HTTPException(status_code=500, detail="Error fetching Google Calendar events")
-
 
 @calendar_router.get("/events/user")
 async def get_user_calendar_events(
