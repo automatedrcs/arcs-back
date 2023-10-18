@@ -1,4 +1,5 @@
 # routers/calendar.py
+# prefix "/calendar"
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -40,14 +41,17 @@ def refresh_google_token(refresh_token: str) -> dict:
 async def fetch_google_calendar_events(entity, start_time, end_time):
     if "authentication" not in entity.data or "google" not in entity.data["authentication"] or "refresh_token" not in entity.data["authentication"]["google"]:
         raise HTTPException(status_code=403, detail="Refresh Token required for Google Calendar operations")
-
-    refreshed_token = refresh_google_token(entity.data["authentication"]["google"]["refresh_token"])
+    print("in fetch_google_calendar_events")
+    refresh_token = decrypt(entity.data["authentication"]["google"]["refresh_token"])
+    print("refresh_token: ", str(refresh_token))    
+    refreshed_token = refresh_google_token(refresh_token)
     access_token = refreshed_token['access_token']
-
+    print("access_token: ", str(access_token))
     credentials = Credentials(token=access_token)
     service = build("calendar", "v3", credentials=credentials)
-
+    print("service built")
     events_result = service.events().list(calendarId='primary', timeMin=start_time.isoformat() + 'Z', timeMax=end_time.isoformat() + 'Z', singleEvents=True, orderBy='startTime').execute()
+    print("events_result: ", events_result)
     return events_result.get('items', [])
 
 @calendar_router.get("/events/user")
@@ -57,7 +61,9 @@ async def get_user_calendar_events(
     end_time: datetime = Query(..., format="%Y-%m-%dT%H:%M:%S"),
     db: Session = Depends(database.get_db)
 ):
+    print("events/user endpoint called")
     user = get_user_by_id(db, user_id)
+    print("user: ", str(user.username))
     return await fetch_google_calendar_events(user, start_time, end_time)
 
 @calendar_router.get("/events/person")
