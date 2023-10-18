@@ -33,7 +33,7 @@ def store_refresh_token(tokens: dict, model, email: str, db: Session):
 
 @authentication_router.get('/google/login/user')
 async def user_login():
-    auth_url = generate_google_auth_url(BASE_URL, '/authentication/google/callback/user', 'https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email')
+    auth_url = generate_google_auth_url(BASE_URL + '/authentication/google/callback/user', 'https://www.googleapis.com/auth/calendar.readonly+https://www.googleapis.com/auth/userinfo.email')
     return responses.RedirectResponse(auth_url)
 
 
@@ -72,7 +72,7 @@ async def user_callback(code: str, db: Session = Depends(database.get_db)):
 
 @authentication_router.get('/google/login/person')
 async def person_login():
-    auth_url = generate_google_auth_url(BASE_URL, '/authentication/google/callback/person', 'https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email')
+    auth_url = generate_google_auth_url(BASE_URL + '/authentication/google/callback/person', 'https://www.googleapis.com/auth/calendar.events+https://www.googleapis.com/auth/userinfo.email')
     return responses.RedirectResponse(auth_url)
 
 
@@ -81,6 +81,7 @@ async def person_callback(code: str, db: Session = Depends(database.get_db)):
     try:
         # Getting the access token
         redirect_uri = f"{BASE_URL}/authentication/google/callback/person"
+        token_url = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
             "client_id": CLIENT_ID,
