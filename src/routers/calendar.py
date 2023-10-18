@@ -9,6 +9,7 @@ import googleapiclient
 from utils import decrypt, get_secret
 import requests
 from datetime import datetime
+from dateutil.parser import parse
 
 calendar_router = APIRouter()
 
@@ -53,20 +54,36 @@ async def fetch_google_calendar_events(db: Session, entity, start_time, end_time
     print(f"Start time: {start_time.isoformat() + 'Z'}")
     print(f"End time: {end_time.isoformat() + 'Z'}")
     
+    # Ensure the timezone information is included only once
+    formatted_start_time = start_time.isoformat()
+    formatted_end_time = end_time.isoformat()
+    
+    if not formatted_start_time.endswith('Z'):
+        formatted_start_time += 'Z'
+    
+    if not formatted_end_time.endswith('Z'):
+        formatted_end_time += 'Z'
+        
+    # Print out the start and end times
+    print(f"Formatted Start time: {formatted_start_time}")
+    print(f"Formatted End time: {formatted_end_time}")
+
     # Print out the access token (remove this after debugging!)
     print(f"Access Token: {access_token}")  # Please ensure this gets removed after debugging!
 
     try:
         events_result = service.events().list(
             calendarId='primary',
-            timeMin=start_time.isoformat() + 'Z',
-            timeMax=end_time.isoformat() + 'Z',
+            timeMin=formatted_start_time,
+            timeMax=formatted_end_time,
             singleEvents=True,
             orderBy='startTime'
         ).execute()
         return events_result.get('items', [])
     except googleapiclient.errors.HttpError as error:
-        print(f"Google Calendar API error: {error}")
+        print(f"Google Calendar API error: {error.resp.status} - {error.resp.reason}")
+        if error.resp.status == 400:
+            print(f"Error details: {error.content.decode('utf-8')}")
         raise HTTPException(status_code=500, detail="Error fetching Google Calendar events")
 
 @calendar_router.get("/events/user")
