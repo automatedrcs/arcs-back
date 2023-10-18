@@ -1,18 +1,16 @@
 # routers/user.py
 # prefix "/user"
 
-from fastapi import APIRouter, HTTPException, status, Depends, Body, Response, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Body, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta 
 import jwt
 import bcrypt
-from typing import Optional, List
+from typing import Optional
 from uuid import UUID
 from config import JWT_SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from database import models, schema, database
-import logging
-from utils import encrypt, decrypt
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/token")
 
@@ -29,15 +27,14 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def create_access_token(data: dict) -> str:
+def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def create_refresh_token(data: dict) -> str:
-    return jwt.encode(data, JWT_SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
@@ -98,13 +95,9 @@ def delete_user(db: Session, user_id: UUID) -> Optional[models.User]:
         return db_user
     return None
 
-def get_current_user(request: Request, db: Session = Depends(database.get_db)) -> models.User:
-    encrypted_token = request.cookies.get("access_token")
-    decrypted_token = decrypt(encrypted_token)   # Decrypt token after retrieving from client
-    if not decrypted_token:
-        raise credentials_exception
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)) -> models.User:
     try:
-        payload = decode_token(decrypted_token)  # Use decrypted_token here
+        payload = decode_token(token)
         username = payload.get("sub")
         if not username:
             raise credentials_exception
@@ -131,19 +124,12 @@ def signup(user_data: schema.UserCreate = Body(...), db: Session = Depends(datab
 @user_router.post("/login")
 def login_for_access_token(response: Response, form_data: schema.UserLogin = Body(...), db: Session = Depends(database.get_db)):
     user = get_user(db, username=form_data.username)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-
-    if not verify_password(form_data.password, user.password):
+    if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
     access_token = create_access_token(data={"sub": form_data.username})
-    encrypted_access_token = encrypt(access_token)
-    refresh_token = create_refresh_token(data={"sub": form_data.username})
-    encrypted_refresh_token = encrypt(refresh_token)  # Encrypting the refresh token as well
-    
-    response.set_cookie(key="refresh_token", value=encrypted_refresh_token, httponly=True, max_age=30*24*60*60) # 30 days
-    response.set_cookie(key="access_token", value=encrypted_access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60)
+    response.set_cookie(key="access_token", value=access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60, samesite="lax", secure=True)  # Assuming HTTPS
+
     return {
         "message": "Logged in successfully",
         "userUUID": str(user.id),
@@ -164,25 +150,19 @@ def login_for_token(form_data: schema.UserLogin = Body(...), db: Session = Depen
     return {"access_token": access_token, "token_type": "bearer"}
 
 @user_router.post("/token/refresh")
-def refresh_token_endpoint(response: Response, db: Session = Depends(database.get_db)):
-    encrypted_refresh_token_data = request.cookies.get("refresh_token")
-    if not encrypted_refresh_token_data:
-        raise HTTPException(status_code=400, detail="Refresh token not provided.")
-
-    refresh_token_data = decrypt(encrypted_refresh_token_data)  # Decrypting the token
+def refresh_token_endpoint(request: Request, response: Response, db: Session = Depends(database.get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token not provided.")
 
     try:
-        payload = decode_token(refresh_token_data)
+        payload = decode_token(token)
         username = payload.get("sub")
-        if not username:
-            raise credentials_exception
         user = get_user(db, username=username)
-        if not user or user.refresh_token != refresh_token_data:  # Checking against decrypted refresh token
+        if not user:
             raise credentials_exception
-        
         new_access_token = create_access_token(data={"sub": username})
-        encrypted_access_token = encrypt(new_access_token)
-        response.set_cookie(key="access_token", value=encrypted_access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60)
+        response.set_cookie(key="access_token", value=new_access_token, httponly=True, max_age=ACCESS_TOKEN_EXPIRE_MINUTES*60, samesite="lax", secure=True)  # Assuming HTTPS
     except jwt.JWTError:
         raise credentials_exception
     return {"message": "Token refreshed successfully"}
