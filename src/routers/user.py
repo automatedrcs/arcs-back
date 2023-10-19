@@ -72,7 +72,6 @@ def get_user(db: Session, organization_id: Optional[int] = None, username: Optio
 def update_user_tokens(db: Session, username: str, access_token: str, refresh_token: str) -> models.User:
     db_user = db.query(models.User).filter(models.User.username == username).first()
     if not db_user:
-        logging.info(f"Attempted login with username: {username}, but user was not found.")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     db_user.access_token = access_token  # Model will handle encryption
@@ -172,30 +171,6 @@ def get_my_details(current_user: models.User = Depends(get_current_user)):
     return {
         "userUUID": str(current_user.id),
         "organizationId": str(current_user.organization_id)
-    }
-
-@user_router.get("/google-access-token")
-def get_google_access_token(current_user: models.User = Depends(get_current_user)):
-    """
-    Retrieve the Google access token for the current authenticated user.
-    """
-    # Check if the data field is None or if the googleAccessToken does not exist
-    if not current_user.data or "googleAccessToken" not in current_user.data:
-        raise HTTPException(status_code=404, detail="Google access token not found")
-
-    google_access_token_encrypted = current_user.data.get("googleAccessToken")
-    google_access_token = decrypt(google_access_token_encrypted)
-    
-    # In reality, Google access tokens often expire after 1 hour. 
-    # Depending on your setup, you might want to check the token's validity or expiration.
-    # Here we're simply suggesting a potential action on the client-side.
-    expiration_message = {
-        "message": "Google access token might be expired. Please consider reconnecting your Google account on the client-side."
-    }
-    
-    return {
-        "googleAccessToken": google_access_token,
-        "warning": expiration_message
     }
 
 @user_router.delete("/user/{user_id}")
