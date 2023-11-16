@@ -20,6 +20,7 @@ DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@/{DB_NAME}?host=/cloud
 # CORS origins
 ORIGINS = [
     "https://arcs-front-service-ctl3t7ldeq-uc.a.run.app",
+    "http://localhost:5173"
 ]
 
 # Constants for JWT
